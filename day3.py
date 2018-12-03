@@ -7,16 +7,43 @@ def main():
 
     claims = [parse_claim_to_rect(line) for line in lines]
 
+    print("Got {} claims".format(len(claims)))
 #    for claim in claims:
 #        print(claim)
-    test_lines = [
-            "#1 @ 1,3: 4x4",
-            "#2 @ 3,1: 4x4",
-            "#3 @ 5,5: 2x2",
-            ]
-    test_rects = [parse_claim_to_rect(line) for line in test_lines]
-    overlap = test_rects[0].intersect(test_rects[1])
-    print("overlap is {}".format(overlap))
+
+#    part1(claims)
+    part2(claims)
+
+def part1(claims):
+
+    width = 1000
+    height = 1000
+    step = 100
+    overcommitted = 0
+    for i in range(0, width, step):
+        print("i: {}".format(i))
+        for j in range(0, height, step):
+            region = Rect(None, i, j, step, step)
+            region_rects = [r for r in claims if region.intersect(r) is not None]
+
+            for ii in range(0, step):
+                for jj in range(0, step):
+                    within = 0
+                    for rect in region_rects:
+                        if rect.contains(i+ii, j+jj):
+                            within += 1
+                            if within >= 2:
+                                overcommitted += 1
+                                break
+
+    print("overcommitted is {}".format(overcommitted))
+
+def part2(claims):
+    for a in claims:
+        intersects = [b for b in claims if b.intersect(a) is not None]
+        if len(intersects) == 1:
+            print("does not intersect: {}".format(a))
+        print("{} has {}".format(a.idx, len(intersects)))
 
 
 def parse_claim_to_rect(line):
@@ -32,7 +59,7 @@ def parse_claim_to_rect(line):
 class Rect():
 
     def __init__(self, idx, left, top, width, height):
-        self.id = idx
+        self.idx = idx
         self.left = left
         self.top = top
         self.width = width
@@ -45,7 +72,7 @@ class Rect():
         return self.top + self.height
 
     def __repr__(self):
-        return "#{} @ {},{}: {}x{}".format(self.id, self.left, self.top, self.width, self.height)
+        return "#{} @ {},{}: {}x{}".format(self.idx, self.left, self.top, self.width, self.height)
 
 
     def intersect(self, other):
@@ -72,6 +99,10 @@ class Rect():
         idx = None
 
         return Rect(idx, ileft, itop, iwidth, iheight)
+
+
+    def contains(self, x, y):
+        return self.left <= x and x < self.right() and self.top <= y and y < self.bottom()
 
 
 if __name__ == "__main__":
