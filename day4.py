@@ -17,8 +17,26 @@ def main():
 #    with open("day4-test.txt") as f:
         lines = f.readlines()
     schedule = parse_schedule_lines(lines)
-    print_schedule(schedule)
+#    print_schedule(schedule)
     part1(schedule)
+    part2(schedule)
+
+
+def part2(schedule):
+    guard_ids = set([r.id for r in schedule])
+    # quadratic, could partition instead of re-searching
+    sleepiest_info = []
+    for guard_id in guard_ids:
+        times_asleep = sleepy_minutes(guard_id, schedule)
+#        print("ID {}: {}".format(guard_id, times_asleep))
+        sleepiest_minute_info = max(enumerate(times_asleep), key=lambda t: t[1])
+        sleepiest_info.append((guard_id, sleepiest_minute_info))
+
+    sleepiest_minute_info = max(enumerate(sleepiest_info), key=lambda t: t[1][1][1])
+    guard_id = sleepiest_minute_info[1][0]
+    minute = sleepiest_minute_info[1][1][0]
+    print("guard id {} minute {}".format(guard_id, minute))
+    print(guard_id * minute)
 
 
 def part1(schedule):
@@ -27,23 +45,28 @@ def part1(schedule):
         this_sleep = sum([finish-start for (start, finish) in record.sleeps])
         guard_sleep[record.id] += this_sleep
 
-    print("GS {}".format(guard_sleep))
+#    print("GS {}".format(guard_sleep))
     sleepy_guard_info = max(enumerate(guard_sleep.items()), key=lambda t: t[1][1])
 
     (_, (sleepy_guard_id, _)) = sleepy_guard_info
-    print("Guard {} sleepiest".format(sleepy_guard_id))
+#    print("Guard {} sleepiest".format(sleepy_guard_id))
 
-    times_asleep = [0] * 60
-    for record in [r for r in schedule if r.id == sleepy_guard_id]:
-        for sleep in record.sleeps:
-            for i in range(sleep[0],sleep[1]):
-                times_asleep[i] += 1
-    print(times_asleep)
+    times_asleep = sleepy_minutes(sleepy_guard_id, schedule)
 
     sleepy_minute_info = max(enumerate(times_asleep), key=lambda t: t[1])
     sleepy_minute = sleepy_minute_info[0]
     print("sleepiest minute {}".format(sleepy_minute))
     print("Guard {} most asleep in {} - product {}".format(sleepy_guard_id, sleepy_minute, sleepy_guard_id * sleepy_minute))
+
+
+def sleepy_minutes(guard_id, schedule):
+    times_asleep = [0] * 60
+    for record in [r for r in schedule if r.id == guard_id]:
+        for sleep in record.sleeps:
+            for i in range(sleep[0],sleep[1]):
+                times_asleep[i] += 1
+#    print(times_asleep)
+    return times_asleep
 
 
 def print_schedule(schedule):
