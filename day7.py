@@ -12,8 +12,8 @@ Step A must be finished before step D can begin.
 Step B must be finished before step E can begin.
 Step D must be finished before step E can begin.
 Step F must be finished before step E can begin.""".split("\n")
-#    with open("day7-input.txt") as f:
-#        lines = f.readlines()
+    with open("day7-input.txt") as f:
+        lines = f.readlines()
 
     (verts, edges) = parse_lines(lines)
 
@@ -58,7 +58,9 @@ def part1(verts, edges):
         v = heappop(possible)
         sequence.append(v)
         for c in edges[v]:
-            if c not in possible and c not in sequence:
+            pre_reqs = redges[c]
+            done = set(sequence)
+            if all([pre_req in done for pre_req in redges[c]]) and (c not in done) and (c not in possible):
                 heappush(possible, c)
         print("V {}: {}".format(v, possible))
 
