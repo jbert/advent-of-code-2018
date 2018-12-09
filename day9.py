@@ -5,8 +5,9 @@ from collections import deque
 def main():
 
     num_marbles = 25
-    num_players = 9
-    part1(num_marbles, num_players)
+    for (num_players, num_marbles) in [[9, 25], [10, 1618], [13, 7999], [17, 1104], [21,6111], [30, 5807], [448, 71628]]:
+        high_score = part1(num_marbles, num_players)
+        print("{}, {}: {}".format(num_players, num_marbles, high_score))
 
 
 class Circle():
@@ -16,16 +17,22 @@ class Circle():
         self.current = 0        # index, not value
 
         self.num_players = num_players
-        self.next_player = 0
+        self.current_player = 0
+        self.scores = [0] * self.num_players
 
 
     def move(self):
         self.last_number += 1
         v = self.last_number
         if v % 23 == 0:
-            v = self._remove_at(self.current - 7)
+            score = v
+            score += self._remove_at(self.current - 7)
         else:
             self._insert_at(self.current + 2, v)
+            score = 0
+
+        self.scores[self.current_player] += score
+        self.current_player = (self.current_player + 1) % self.num_players
         return 1
 
 
@@ -42,17 +49,21 @@ class Circle():
         self.circle.insert(pos, v)
         self.current = pos
 
+
+    def high_score(self):
+        return max(self.scores)
+
     
     def __repr__(self):
-        return "{}: {}".format(self.circle[self.current], self.circle)
+        return "{} [{}]: {} {}".format(self.high_score(), self.current_player+1, self.circle[self.current], self.circle)
 
 
 def part1(num_marbles, num_players):
     c = Circle(num_players)
-    while True:
+    for i in range(num_marbles-1):
+#        print(c)
         c.move()
-        print(c)
-
+    return c.high_score()
 
 
 if __name__ == "__main__":
