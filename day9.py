@@ -35,28 +35,24 @@ class Circle():
         v = self.last_number
         if v % 23 == 0:
             score = v
-            score += self._remove_at(self.current - 7)
+            pos = self.current - 7
+            pos = pos % len(self.circle)
+
+            v = self.circle[pos]
+            del(self.circle[pos])
+            self.current = pos
+            score += v
+
         else:
-            self._insert_at(self.current + 2, v)
+            pos = self.current + 2
+            pos = pos % len(self.circle)
+            self.circle.insert(pos, v)
+            self.current = pos
             score = 0
 
         self.scores[self.current_player] += score
         self.current_player = (self.current_player + 1) % self.num_players
         return 1
-
-
-    def _remove_at(self, pos):
-        pos = pos % len(self.circle)
-        v = self.circle[pos]
-        del(self.circle[pos])
-        self.current = pos
-        return v
-
-
-    def _insert_at(self, pos, v):
-        pos = pos % len(self.circle)
-        self.circle.insert(pos, v)
-        self.current = pos
 
 
     def high_score(self):
