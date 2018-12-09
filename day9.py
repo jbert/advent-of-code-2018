@@ -1,11 +1,20 @@
 #!/usr/bin/python3
 import string
+import time
 from collections import deque
 
 def main():
 
     num_marbles = 25
-    for (num_players, num_marbles) in [[9, 25], [10, 1618], [13, 7999], [17, 1104], [21,6111], [30, 5807], [448, 71628]]:
+    for (num_players, num_marbles) in [
+            [9, 25],
+            [10, 1618],
+            [13, 7999],
+            [17, 1104],
+            [21,6111],
+            [30, 5807],
+            [448, 71628],
+            [448, 7162800]]:
         high_score = part1(num_marbles, num_players)
         print("{}, {}: {}".format(num_players, num_marbles, high_score))
 
@@ -60,9 +69,17 @@ class Circle():
 
 def part1(num_marbles, num_players):
     c = Circle(num_players)
+    last = time.time()
+    last_ops = 0
+    interval = 5.0
     for i in range(num_marbles-1):
 #        print(c)
         c.move()
+        now = time.time()
+        if now - last > interval:
+            print("{}% {}: {} ops/sec".format((100 * i) // num_marbles, i, (i-last_ops) / interval))
+            last = now
+            last_ops = i
     return c.high_score()
 
 
