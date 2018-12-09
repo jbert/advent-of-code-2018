@@ -14,16 +14,16 @@ def main():
             [21,6111],
             [30, 5807],
             [448, 71628],
-            [448, 7162800]]:
+            [448, 7162800],
+        ]:
         high_score = part1(num_marbles, num_players)
         print("{}, {}: {}".format(num_players, num_marbles, high_score))
 
 
 class Circle():
     def __init__(self, num_players):
-        self.circle = deque([0])
-        self.last_number = 0
-        self.current = 0        # index, not value
+        self.circle = deque([1, 0])
+        self.last_number = 1
 
         self.num_players = num_players
         self.current_player = 0
@@ -35,19 +35,13 @@ class Circle():
         v = self.last_number
         if v % 23 == 0:
             score = v
-            pos = self.current - 7
-            pos = pos % len(self.circle)
-
-            v = self.circle[pos]
-            del(self.circle[pos])
-            self.current = pos
-            score += v
+            self.circle.rotate(7)
+            score += self.circle.popleft()
 
         else:
-            pos = self.current + 2
-            pos = pos % len(self.circle)
-            self.circle.insert(pos, v)
-            self.current = pos
+            self.circle.rotate(-2)
+            self.circle.appendleft(v)
+#            self.circle.rotate(-1)
             score = 0
 
         self.scores[self.current_player] += score
@@ -60,7 +54,7 @@ class Circle():
 
     
     def __repr__(self):
-        return "{} [{}]: {} {}".format(self.high_score(), self.current_player+1, self.circle[self.current], self.circle)
+        return "{} [{}]: {}".format(self.high_score(), self.current_player+1, self.circle)
 
 
 def part1(num_marbles, num_players):
