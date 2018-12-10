@@ -37,8 +37,8 @@ position=< 5,  9> velocity=< 1, -2>
 position=<14,  7> velocity=<-2,  0>
 position=<-3,  6> velocity=< 2, -1>""".split("\n")
 
-#    with open("day10-input.txt") as f:
-#        lines = f.readlines()
+    with open("day10-input.txt") as f:
+        lines = f.readlines()
 
     pts = parse_lines(lines)
     part1(pts)
@@ -111,12 +111,12 @@ def part1(pts):
     print("w {} h {}".format(width, height))
 
     last_score = None
-    for i in range(10):
+    for i in range(100000):
         for pt in pts:
             pt.tick()
 #        s.draw()
         score = score_pts(pts)
-        print("score: {}".format(score))
+        print("step {} score: {}".format(i, score))
         if last_score is not None and score < last_score:
             for pt in pts:
                 pt.untick()
