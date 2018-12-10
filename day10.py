@@ -85,7 +85,7 @@ class Screen():
     def plot(self,x,y):
         x -= self.left
         y -= self.top
-        if x > 0 and y > 0 and x < self.width and y < self.height:
+        if x >= 0 and y >= 0 and x < self.width and y < self.height:
             self.screen[x][y] = ord('#')
 
 
@@ -123,22 +123,26 @@ def part1(pts):
             break
         last_score = score
 
-    s = Screen(-width, -height, 2*width, 2*height)
+    (l, t, w, h) = bounding_box(pts)
+    print("{} {} {} {}".format(l, t, w, h))
+    s = Screen(l, t, w, h)
     s.clear()
     for pt in pts:
         s.plot(pt.x,pt.y)
     s.draw()
 
 
-def score_pts(pts):
+def bounding_box(pts):
     min_x = min(pts, key=lambda pt: pt.x).x
     min_y = min(pts, key=lambda pt: pt.y).y
     max_x = max(pts, key=lambda pt: pt.x).x
     max_y = max(pts, key=lambda pt: pt.y).y
-    w = max_x - min_x
-    h = max_y - min_y
-    return 1.0 / (w * h)
+    return (min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
+
+def score_pts(pts):
+    (_, _, w, h) = bounding_box(pts)
+    return 1.0 / (w * h)
 
 
 
