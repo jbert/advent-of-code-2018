@@ -37,6 +37,9 @@ position=< 5,  9> velocity=< 1, -2>
 position=<14,  7> velocity=<-2,  0>
 position=<-3,  6> velocity=< 2, -1>""".split("\n")
 
+#    with open("day10-input.txt") as f:
+#        lines = f.readlines()
+
     pts = parse_lines(lines)
     part1(pts)
 
@@ -59,6 +62,11 @@ class Pt():
         self.y += self.dy
 
 
+    def untick(self):
+        self.x -= self.dx
+        self.y -= self.dy
+
+
 class Screen():
     def __init__(self, left, top, w, h):
         self.left = left
@@ -75,7 +83,6 @@ class Screen():
 
 
     def plot(self,x,y):
-        print("P: {},{}".format(x, y))
         x -= self.left
         y -= self.top
         if x > 0 and y > 0 and x < self.width and y < self.height:
@@ -103,15 +110,35 @@ def part1(pts):
 
     print("w {} h {}".format(width, height))
 
-    s = Screen(-width, -height, 2*width, 2*height)
+    last_score = None
     for i in range(10):
-        s.clear()
         for pt in pts:
-            print("w {} h {}".format(pt.x,pt.y))
-            s.plot(pt.x,pt.y)
             pt.tick()
-        s.draw()
-        time.sleep(1)
+#        s.draw()
+        score = score_pts(pts)
+        print("score: {}".format(score))
+        if last_score is not None and score < last_score:
+            for pt in pts:
+                pt.untick()
+            break
+        last_score = score
+
+    s = Screen(-width, -height, 2*width, 2*height)
+    s.clear()
+    for pt in pts:
+        s.plot(pt.x,pt.y)
+    s.draw()
+
+
+def score_pts(pts):
+    min_x = min(pts, key=lambda pt: pt.x).x
+    min_y = min(pts, key=lambda pt: pt.y).y
+    max_x = max(pts, key=lambda pt: pt.x).x
+    max_y = max(pts, key=lambda pt: pt.y).y
+    w = max_x - min_x
+    h = max_y - min_y
+    return 1.0 / (w * h)
+
 
 
 
