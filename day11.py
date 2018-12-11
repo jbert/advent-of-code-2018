@@ -103,10 +103,66 @@ class Grid:
 
 
     def rect_sum(self, l, t, w, h):
-        return self._rect_sum(l, t, w, h)
+        if w < self.step or h < self.step:
+            return self._rect_sum(l, t, w, h)
+
+        assert w > 0
+        assert h > 0
+#        print("RS: l {} t {} w {} h {} step {}".format(l, t, w, h, self.step))
+        r = l + w
+        b = t + h
+        # Grid left
+        g_l = self._grid_round_up(l)
+        g_r = self._grid_round_down(r)
+        assert l <= g_l
+        assert g_l <= g_r
+        assert g_r <= r
+
+        g_t = self._grid_round_up(t)
+        g_b = self._grid_round_down(b)
+        assert t <= g_t
+        assert g_t <= g_b
+        assert g_b <= b
+
+        s = 0
+        # Add the grid contribution
+        for i in range(g_l, g_r, self.step):
+            for j in range(g_t, g_b, self.step):
+                s += self.g[i//self.step][j//self.step]
+
+        # Corners
+        s += self._rect_sum(l, t, g_l - l, g_t - t)
+        s += self._rect_sum(g_r, t, r - g_r, g_t - t)
+        s += self._rect_sum(l, g_t, g_l - l, b - g_b)
+        s += self._rect_sum(g_r, g_b, r - g_r, b - g_b)
+
+        # edges
+        # left
+        s += self._rect_sum(l, g_t, g_l - l, g_b - g_t)
+        # right
+        s += self._rect_sum(g_r, g_t, r - g_r, g_b - g_t)
+        # top
+        s += self._rect_sum(g_l, t, g_r - g_l, g_t - t)
+        # bottom
+        s += self._rect_sum(g_l, g_b, g_r - g_l, b - g_b)
+
+        return s
+
+
+    def _grid_round_up(self, n):
+        return (n-1) - (n-1) % self.step + self.step
+
+
+    def _grid_round_down(self, n):
+        return n - n % self.step
 
 
     def _rect_sum(self, l, t, w, h):
+        if w == 0 or h == 0:
+            return 0
+#        print("_RS: l {} t {} w {} h {} step {}".format(l, t, w, h, self.step))
+        assert w > 0
+        assert h > 0
         s = 0
         for i in range(l, l+w):
             for j in range(t, t+h):
