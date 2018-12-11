@@ -91,10 +91,10 @@ class Grid:
         assert r.height > 0
         self.r = r
 
-        self._make_grid(f)
+        self._cache_func(f)
 
 
-    def _make_grid(self, f):
+    def _cache_func(self, f):
         col = [0] * self.r.height
         self.g = [col.copy() for _ in range(self.r.width)]
         for i in range(self.r.width):
