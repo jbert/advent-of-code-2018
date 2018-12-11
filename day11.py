@@ -40,7 +40,8 @@ def main():
     soln, tpl = part1(gsn)
     print("gsn: {} {}: {}".format(gsn, soln, tpl))
 
-    soln, size, tpl = part2(gsn)
+    soln, tpl, size = part2(gsn)
+    print("P2 coord {} size {} tpl".format(soln, size, tpl))
     
 
 #    soln = 0, 0
@@ -55,12 +56,9 @@ def part1(gsn):
     max_coord = None
     for i in range(width-2):
         for j in range(height-2):
-            tpl = 0
-            for di in range(3):
-                for dj in range(3):
-                    tpl += power_level(i + di, j + dj, gsn)
+            tpl = power_level_size(i, j, gsn, 3)
             if tpl > max_tpl:
-                max_coord = (i, j)  # 1-numbering used in puzzle
+                max_coord = (i, j)
                 max_tpl = tpl
 
     return max_coord, max_tpl
@@ -71,34 +69,41 @@ def part2(gsn):
     max_tpl = 0
     max_coord = None
     max_size = None
-    for size in range(3, 300):
-        print("S: {}".format(size))
-        for i in range(width-size-1):
-            for j in range(height-size-1):
-                tpl = power_level(i + di, j + dj, gsn, size)
+    for size in range(3,300):
+        print(size)
+        for i in range(width-2):
+            for j in range(height-2):
+                tpl = power_level_size(i, j, gsn, size)
                 if tpl > max_tpl:
-                    max_coord = (i, j)  # 1-numbering used in puzzle
-                    max_size = size
+                    max_coord = (i, j)
                     max_tpl = tpl
+                    max_size = size
+
+    return max_coord, max_tpl, max_size
+
+def memoize(func):
+    cache = dict()
+
+    def memoized_func(*args):
+        if args in cache:
+            return cache[args]
+        result = func(*args)
+        cache[args] = result
+        return result
+
+    return memoized_func
 
 
-def memodict(f):
-    """ Memoization decorator for a function taking three args """
-    class memodict(dict):
-        def __missing__(self, a, b, c):
-            ret = self[a, b, c] = f(a, b, c)
-            return ret 
-    return memodict().__getitem__
-
-
-def power_level(x, y, gsn, size):
+@memoize
+def power_level_size(i, j, gsn, size):
     tpl = 0
-    for di in range(size+1):
-        for dj in range(size+1):
+    for di in range(size):
+        for dj in range(size):
             tpl += power_level(i + di, j + dj, gsn)
 
     return tpl
 
+@memoize
 def power_level(x, y, gsn):
     rack_id = x + 10
     pl = rack_id * y
