@@ -65,7 +65,7 @@ def part2(gsn):
     max_size = None
 
     step = 10
-    g = Grid(width, height, step, lambda i, j: power_level(i, j, gsn))
+    g = Grid(Rect(0, 0, width, height), lambda i, j: power_level(i, j, gsn))
     for size in range(3, 300):
 #    for size in range(3, 10):
         start_time = time.time()
@@ -86,22 +86,20 @@ def part2(gsn):
 
 
 class Grid:
-    def __init__(self, w, h, step, f):
-        assert w % step == 0
-        assert h % step == 0
-        self.w = w
-        self.h = h
-        self.f = f
+    def __init__(self, r, f):
+        assert r.width > 0
+        assert r.height > 0
+        self.r = r
 
-        self._make_grid()
+        self._make_grid(f)
 
 
-    def _make_grid(self):
-        col = [0] * self.h
-        self.g = [col.copy() for _ in range(self.w)]
-        for i in range(self.w):
-            for j in range(self.h):
-                self.g[i][j] = self.f(i, j)
+    def _make_grid(self, f):
+        col = [0] * self.r.height
+        self.g = [col.copy() for _ in range(self.r.width)]
+        for i in range(self.r.width):
+            for j in range(self.r.height):
+                self.g[i][j] = f(i, j)
 
 
     def rect_sum(self, r):
