@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import time
+import collections
+import functools
 
 def main():
 
@@ -88,64 +90,30 @@ class Grid:
         assert h % step == 0
         self.w = w
         self.h = h
-        self.step = step
         self.f = f
+        self._last_rect = None
 
         self._make_grid()
 
 
     def _make_grid(self):
-        col = [0] * (self.h // self.step)
-        self.g = [col.copy() for _ in range(self.w // self.step)]
-        for i in range(0, self.w, self.step):
-            for j in range(0, self.h, self.step):
-                self.g[i//self.step][j//self.step] = self._rect_sum(i, j, self.step, self.step)
+        col = [0] * self.h
+        self.g = [col.copy() for _ in range(self.w)]
+        for i in range(self.w):
+            for j in range(self.h):
+                self.g[i][j] = self.f(i, j)
 
 
     def rect_sum(self, l, t, w, h):
-        if w < self.step or h < self.step:
-            return self._rect_sum(l, t, w, h)
+        if self._last_rect and self._last_rect == (l+1, t, w, h):
+            s = self._last_rect_sum
+            s -= self._rect_sum(l, t, 1, h)
+            s += self._rect_sum(l+w+1, t, 1, h)
+        else:
+            s = self._rect_sum(l, t, w, h)
 
-        assert w > 0
-        assert h > 0
-#        print("RS: l {} t {} w {} h {} step {}".format(l, t, w, h, self.step))
-        r = l + w
-        b = t + h
-        # Grid left
-        g_l = self._grid_round_up(l)
-        g_r = self._grid_round_down(r)
-        assert l <= g_l
-        assert g_l <= g_r
-        assert g_r <= r
-
-        g_t = self._grid_round_up(t)
-        g_b = self._grid_round_down(b)
-        assert t <= g_t
-        assert g_t <= g_b
-        assert g_b <= b
-
-        s = 0
-        # Add the grid contribution
-        for i in range(g_l, g_r, self.step):
-            for j in range(g_t, g_b, self.step):
-                s += self.g[i//self.step][j//self.step]
-
-        # Corners
-        s += self._rect_sum(l, t, g_l - l, g_t - t)
-        s += self._rect_sum(g_r, t, r - g_r, g_t - t)
-        s += self._rect_sum(l, g_t, g_l - l, b - g_b)
-        s += self._rect_sum(g_r, g_b, r - g_r, b - g_b)
-
-        # edges
-        # left
-        s += self._rect_sum(l, g_t, g_l - l, g_b - g_t)
-        # right
-        s += self._rect_sum(g_r, g_t, r - g_r, g_b - g_t)
-        # top
-        s += self._rect_sum(g_l, t, g_r - g_l, g_t - t)
-        # bottom
-        s += self._rect_sum(g_l, g_b, g_r - g_l, b - g_b)
-
+        self._last_rect = (l, t, w, h)
+        self._last_rect_sum = s
         return s
 
 
@@ -166,7 +134,7 @@ class Grid:
         s = 0
         for i in range(l, l+w):
             for j in range(t, t+h):
-                s += self.f(i, j)
+                s += self.g[i][j]
 
         return s
 
@@ -178,6 +146,33 @@ def power_level_size(i, j, gsn, size):
             tpl += power_level(ii, jj, gsn)
 
     return tpl
+
+
+class memoized(object):
+    '''Decorator. Caches a function's return value each time it is called.
+    If called later with the same arguments, the cached value is returned
+    (not reevaluated).
+    '''
+    def __init__(self, func):
+       self.func = func
+       self.cache = {}
+    def __call__(self, *args):
+       if not isinstance(args, collections.Hashable):
+          # uncacheable. a list, for instance.
+          # better to not cache than blow up.
+          return self.func(*args)
+       if args in self.cache:
+          return self.cache[args]
+       else:
+          value = self.func(*args)
+          self.cache[args] = value
+          return value
+    def __repr__(self):
+       '''Return the function's docstring.'''
+       return self.func.__doc__
+    def __get__(self, obj, objtype):
+       '''Support instance methods.'''
+       return functools.partial(self.__call__, obj)
 
 
 def power_level(x, y, gsn):
@@ -204,6 +199,7 @@ class Pt():
 
     def power_level(self, gsn):
         return power_level(self.x, self.y, gsn)
+
 
 
 if __name__ == "__main__":
