@@ -91,7 +91,6 @@ class Grid:
         self.w = w
         self.h = h
         self.f = f
-        self._last_rect = None
 
         self._make_grid()
 
@@ -105,17 +104,7 @@ class Grid:
 
 
     def rect_sum(self, l, t, w, h):
-        if self._last_rect and self._last_rect == (l+1, t, w, h):
-            s = self._last_rect_sum
-            s -= self._rect_sum(l, t, 1, h)
-            s += self._rect_sum(l+w+1, t, 1, h)
-        else:
-            s = self._rect_sum(l, t, w, h)
-
-        self._last_rect = (l, t, w, h)
-        self._last_rect_sum = s
-        return s
-
+         return self._rect_sum(l, t, w, h)
 
     def _grid_round_up(self, n):
         return (n-1) - (n-1) % self.step + self.step
