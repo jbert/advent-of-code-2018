@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import functools
+import time
 
 def main():
 
@@ -24,22 +24,18 @@ def main():
 
     print("---")
 
-    gsn = 18
-    soln, tpl = part1(gsn)
-    print("gsn: {} {}: {}".format(gsn, soln, tpl))
-    
-    gsn = 42
-    soln, tpl = part1(gsn)
-    print("gsn: {} {}: {}".format(gsn, soln, tpl))
-
-    gsn = 6042 
-    soln, tpl = part1(gsn)
-    print("gsn: {} {}: {}".format(gsn, soln, tpl))
-    
-    gsn = 99042 
-    soln, tpl = part1(gsn)
-    print("gsn: {} {}: {}".format(gsn, soln, tpl))
-
+#    gsn = 18
+#    soln, tpl = part1(gsn)
+#    print("gsn: {} {}: {}".format(gsn, soln, tpl))
+#    
+#    gsn = 42
+#    soln, tpl = part1(gsn)
+#    print("gsn: {} {}: {}".format(gsn, soln, tpl))
+#
+#    gsn = 6042 
+#    soln, tpl = part1(gsn)
+#    print("gsn: {} {}: {}".format(gsn, soln, tpl))
+#    
     soln, tpl, size = part2(gsn)
     print("P2 coord {} size {} tpl".format(soln, size, tpl))
     
@@ -69,8 +65,15 @@ def part2(gsn):
     max_tpl = 0
     max_coord = None
     max_size = None
-    for size in range(300, 3, -1):
-        print(size)
+    last_time = None
+    for size in range(3, 300):
+        now = time.time()
+        if last_time is not None:
+            print("{}: {}".format(size, now - last_time))
+        else:
+            print("{}:".format(size))
+        last_time = now
+
         for i in range(width-size):
             for j in range(height-size):
                 tpl = power_level_size(i, j, gsn, size)
@@ -81,20 +84,7 @@ def part2(gsn):
 
     return max_coord, max_tpl, max_size
 
-def memoize(func):
-    cache = dict()
 
-    def memoized_func(*args):
-        if args in cache:
-            return cache[args]
-        result = func(*args)
-        cache[args] = result
-        return result
-
-    return memoized_func
-
-
-@memoize
 def power_level_size(i, j, gsn, size):
     tpl = 0
     for di in range(size):
@@ -103,7 +93,7 @@ def power_level_size(i, j, gsn, size):
 
     return tpl
 
-@memoize
+
 def power_level(x, y, gsn):
     rack_id = x + 10
     pl = rack_id * y
