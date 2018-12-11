@@ -69,10 +69,10 @@ def part2(gsn):
     max_tpl = 0
     max_coord = None
     max_size = None
-    for size in range(3,300):
+    for size in range(300, 3, -1):
         print(size)
-        for i in range(width-2):
-            for j in range(height-2):
+        for i in range(width-size):
+            for j in range(height-size):
                 tpl = power_level_size(i, j, gsn, size)
                 if tpl > max_tpl:
                     max_coord = (i, j)
