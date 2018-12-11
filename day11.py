@@ -35,15 +35,11 @@ def main():
 #    gsn = 6042 
 #    soln, tpl = part1(gsn)
 #    print("gsn: {} {}: {}".format(gsn, soln, tpl))
-#    
+    
+    gsn = 6042
     soln, tpl, size = part2(gsn)
     print("P2 coord {} size {} tpl".format(soln, size, tpl))
     
-
-#    soln = 0, 0
-#    for dj in range(40, 50):
-#        print(" ".join(["{:2}".format(power_level(soln[0] + di, soln[1] + dj, gsn)) for di in range(30, 40)]))
-
 
 
 def part1(gsn):
@@ -65,31 +61,65 @@ def part2(gsn):
     max_tpl = 0
     max_coord = None
     max_size = None
-    last_time = None
-    for size in range(3, 300):
-        now = time.time()
-        if last_time is not None:
-            print("{}: {}".format(size, now - last_time))
-        else:
-            print("{}:".format(size))
-        last_time = now
 
+    step = 10
+    g = Grid(width, height, step, lambda i, j: power_level(i, j, gsn))
+    for size in range(3, 300):
+#    for size in range(3, 10):
+        start_time = time.time()
         for i in range(width-size):
             for j in range(height-size):
-                tpl = power_level_size(i, j, gsn, size)
+                tpl = g.rect_sum(i, j, size, size)
+#                tpl = power_level_size(i, j, gsn, size)
                 if tpl > max_tpl:
                     max_coord = (i, j)
                     max_tpl = tpl
                     max_size = size
 
+        end_time = time.time()
+        print("{}: {} {}".format(size, max_tpl, end_time - start_time))
+
     return max_coord, max_tpl, max_size
+
+
+class Grid:
+    def __init__(self, w, h, step, f):
+        assert w % step == 0
+        assert h % step == 0
+        self.w = w
+        self.h = h
+        self.step = step
+        self.f = f
+
+        self._make_grid()
+
+
+    def _make_grid(self):
+        col = [0] * (self.h // self.step)
+        self.g = [col.copy() for _ in range(self.w // self.step)]
+        for i in range(0, self.w, self.step):
+            for j in range(0, self.h, self.step):
+                self.g[i//self.step][j//self.step] = self._rect_sum(i, j, self.step, self.step)
+
+
+    def rect_sum(self, l, t, w, h):
+        return self._rect_sum(l, t, w, h)
+
+
+    def _rect_sum(self, l, t, w, h):
+        s = 0
+        for i in range(l, l+w):
+            for j in range(t, t+h):
+                s += self.f(i, j)
+
+        return s
 
 
 def power_level_size(i, j, gsn, size):
     tpl = 0
-    for di in range(size):
-        for dj in range(size):
-            tpl += power_level(i + di, j + dj, gsn)
+    for ii in range(i, i+size):
+        for jj in range(j, j+size):
+            tpl += power_level(ii, jj, gsn)
 
     return tpl
 
