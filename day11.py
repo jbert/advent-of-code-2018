@@ -71,7 +71,8 @@ def part2(gsn):
         start_time = time.time()
         for i in range(width-size):
             for j in range(height-size):
-                tpl = g.rect_sum(i, j, size, size)
+                r = Rect(i, j, size, size)
+                tpl = g.rect_sum(r)
 #                tpl = power_level_size(i, j, gsn, size)
                 if tpl > max_tpl:
                     max_coord = (i, j)
@@ -103,8 +104,9 @@ class Grid:
                 self.g[i][j] = self.f(i, j)
 
 
-    def rect_sum(self, l, t, w, h):
-         return self._rect_sum(l, t, w, h)
+    def rect_sum(self, r):
+         return self._rect_sum(r)
+
 
     def _grid_round_up(self, n):
         return (n-1) - (n-1) % self.step + self.step
@@ -114,18 +116,65 @@ class Grid:
         return n - n % self.step
 
 
-    def _rect_sum(self, l, t, w, h):
-        if w == 0 or h == 0:
+    def _rect_sum(self, r):
+        if r.width == 0 or r.height == 0:
             return 0
 #        print("_RS: l {} t {} w {} h {} step {}".format(l, t, w, h, self.step))
-        assert w > 0
-        assert h > 0
+        assert r.width > 0
+        assert r.height > 0
         s = 0
-        for i in range(l, l+w):
-            for j in range(t, t+h):
+        for i in range(r.left, r.right()):
+            for j in range(r.top, r.bottom()):
                 s += self.g[i][j]
 
         return s
+
+
+class Rect():
+
+    def __init__(self, left, top, width, height):
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+
+    def right(self):
+        return self.left + self.width
+
+    def bottom(self):
+        return self.top + self.height
+
+    def __repr__(self):
+        return "#{} @ {},{}: {}x{}".format(self.left, self.top, self.width, self.height)
+
+
+    def intersect(self, other):
+        """Return the rect which is the intersection, or None"""
+        s = self
+        o = other
+
+        if o.left < s.left:
+            (o, s) = (s, o)
+        if s.right() <= o.left:
+            return None
+
+        ileft = o.left
+        iwidth = s.right() - o.left
+
+        if o.top < s.top:
+            (o, s) = (s, o)
+        if s.bottom() <= o.top:
+            return None
+
+        itop = o.top
+        iheight = s.bottom() - o.top
+
+        return Rect(ileft, itop, iwidth, iheight)
+
+
+    def contains(self, x, y):
+        return self.left <= x and x < self.right() and self.top <= y and y < self.bottom()
+
 
 
 def power_level_size(i, j, gsn, size):
