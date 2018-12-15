@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import time
+import os
 
 def main():
     lines = """#########
@@ -13,8 +14,23 @@ def main():
 #########""".split("\n")
 
     game = Game(lines)
-    print(game)
+    part1(game)
 
+
+def part1(game):
+
+    rounds = 0
+    while game.isnt_over():
+        rounds += 1
+        if rounds % 100:
+            os.system("clear")
+            print(rounds)
+            print(game)
+        game.tick()
+
+    print("NO COLLISION!: {}".format(collision))
+
+ 
 
 UNIT_ELF    = 'E'
 UNIT_GOBLIN = 'G'
@@ -33,6 +49,10 @@ class Unit():
         return self.c
 
 
+    def is_enemy(self, other):
+        return self.c != other.c
+
+
     def __repr__(self):
         return "{},{}: {}".format(self.i, self.j, self.c)
 
@@ -43,14 +63,35 @@ class Game():
         self.units = []
         self.state = [self._parse_row(t) for t in enumerate(lines)]
         self.height = len(self.state)
+        self.num_elves = len([u for u in self.units if u.c == UNIT_ELF])
+        self.num_goblins = len([u for u in self.units if u.c == UNIT_GOBLIN])
         self._sort_units()
         print("width {} height {}".format(self.width, self.height))
 
 
+    def enemies(self, unit):
+        return [u for u in self.units if u.is_enemy(unit)]
+
+
     def tick(self, remove=False):
         for unit in self.units:
-            unit.move(self.state)
+            unit.move(self)
         self._sort_units()
+
+
+    def isnt_over(self):
+        return self.num_elves > 0 and self.num_goblins > 0
+
+
+    def remove_unit(self, unit):
+        if unit.c == UNIT_ELF:
+            self.num_elves -= 1
+        elif unit.c == UNIT_GOBLIN:
+            self.num_goblins -= 1
+        else:
+            raise RuntimeError("wtf")
+
+        self.units = [u for u in self.units if not(u.i == unit.i and u.j == unit.j)]
 
 
     def _parse_row(self, t):
@@ -99,7 +140,7 @@ class Game():
         for j in range(self.height):
             map += ''.join([_map_char(t, j) for t in enumerate(self.state[j])])
             map += '\n'
-#        map = "\n".join(self.state)
+    #        map = "\n".join(self.state)
         units = '\n'.join([str(unit) for unit in self.units])
         return map + "\n" + units
 
