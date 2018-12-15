@@ -39,9 +39,8 @@ MAP_WALL    = '#'
 
 
 class Unit():
-    def __init__(self, i, j, c):
-        self.i = i
-        self.j = j
+    def __init__(self, pt, c):
+        self.pt = pt
         self.c = c
 
 
@@ -54,7 +53,48 @@ class Unit():
 
 
     def __repr__(self):
-        return "{},{}: {}".format(self.i, self.j, self.c)
+        return "{}: {}".format(self.pt.x, self.c)
+
+
+    def move(self, game):
+        targets = game.enemies(self)
+        target_pts = [pt for t in targets for pt in t.pt.adjacent(game)]
+        # filter target pts by being empty
+        # filter by having a path (keep paths)
+        # sort by path length (keep all shortest)
+        # produce first steps on shortest paths
+        # sort first steps by destination reading order
+        # take first step
+        print(target_pts)
+        raise RuntimeError("a")
+
+
+    def sort_key(self):
+        return (self.pt.y, self.pt.x)       # Reading order
+
+
+class Pt():
+    def __init__(self, x, y, c=None):
+        self.x = x
+        self.y = y
+        self.c = c
+
+
+    def adjacent(self, game):
+        pts = []
+        pts.append(self.add(0, -1))
+        pts.append(self.add(-1, 0))
+        pts.append(self.add(1, 0))
+        pts.append(self.add(0, 1))
+        return [p for p in pts if game.contains(p)]
+
+
+    def add(self, x, y):
+        return Pt(self.x + x, self.y + y)
+
+
+    def __repr__(self):
+        return "{},{}".format(self.x, self.y)
 
 
 class Game():
@@ -67,6 +107,22 @@ class Game():
         self.num_goblins = len([u for u in self.units if u.c == UNIT_GOBLIN])
         self._sort_units()
         print("width {} height {}".format(self.width, self.height))
+
+
+    def contains(self,pt):
+        return pt.x > 0 and pt.y > 0 and pt.x < self.width and pt.y < self.height
+
+
+
+    def contents(self, pt):
+        if pt.x < 0 or pt.x > self.width:
+            raise RuntimeError("Bad x coord : {}".format(x))
+        if pt.y < 0 or pt.y > self.height:
+            raise RuntimeError("Bad y coord : {}".format(y))
+        u = self.find_unit(pt)
+        if u:
+            return u
+        return self.state[y][x]
 
 
     def enemies(self, unit):
@@ -102,7 +158,7 @@ class Game():
         def _parse_unit(t):
             i, c = t
             if c == UNIT_ELF or c == UNIT_GOBLIN:
-                self.units.append(Unit(i, j, c))
+                self.units.append(Unit(Pt(i, j), c))
                 return MAP_FLOOR
             else:
                 return c
@@ -112,16 +168,16 @@ class Game():
 
     def _sort_units(self):
         # Top first, then left to right
-        self.units = sorted(self.units, key=lambda u: (u.j, u.i))
+        self.units = sorted(self.units, key=lambda u: u.sort_key())
 
 
     def find_unit(self, i, j, exclude=None):
         for unit in self.units:
             if id(unit) == exclude:
                 continue
-            if unit.i == i and unit.j == j:
+            if unit.pt.x == i and unit.pt.y == j:
                 return unit
-            if unit.j > j:      # Carts are sorted, we can stop looking
+            if unit.pt.y > j:      # Carts are sorted, we can stop looking
                 break
         return None
 
