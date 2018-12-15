@@ -135,7 +135,6 @@ class Game():
         self.num_elves = len([u for u in self.units if u.c == UNIT_ELF])
         self.num_goblins = len([u for u in self.units if u.c == UNIT_GOBLIN])
         self._sort_units()
-        print("width {} height {}".format(self.width, self.height))
 
 
     def shortest_path_between(self, start, dest):
@@ -158,20 +157,14 @@ class Game():
             def __repr__(self):
                 return "{} <- {}".format(self.pt, self.prev)
 
-        print("SPB: --------")
         # Don't go back where we've been
         visited = set()
-        visited.add(str(start))
+        visited.add(start)
         # Edge we are exploring
         fringe = [Node(start, None)]
         # Kept as a priority queue (sorted by the A-star function 'f' in Node above)
         heapq.heapify(fringe)
         while True:
-            print("--------")
-            print("V: {}".format((visited)))
-            for head in fringe:
-                print("F: {}".format(head))
-
             if not len(fringe) > 0:
                 # No path
                 return None
@@ -179,13 +172,11 @@ class Game():
             node = heapq.heappop(fringe)
             if node.pt == dest:
                 break
-            print("POP: {}".format(head))
             next_steps = [Node(next_pt, node) for next_pt in node.pt.adjacent_space(self) if next_pt != node.pt]
             for next_step in next_steps:
                 if next_step.pt not in visited:
                     heapq.heappush(fringe, next_step)
                     visited.add(next_step.pt)
-                    print("A: {}".format(next_step.pt))
 
         assert node.pt == dest
         path = []
