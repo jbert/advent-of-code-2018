@@ -25,21 +25,22 @@ def part1(game, clear=False):
 
     rounds = 0
     last_time = time.time()
+    now = last_time
     while game.isnt_over():
-        now = time.time()
-        all_units_moved = game.tick()
         hp_sum = sum([u.hp for u in game.units])
         if clear:
             os.system("clear")
         else:
             print("-" * 40)
+        print("Rounds {}: {} elves {} goblins {} hpsum {:5} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
+        print(game)
+        last_time = now
+        all_units_moved = game.tick()
+        now = time.time()
         if all_units_moved:
             rounds += 1
         else:
             break
-        print("Rounds {}: {} elves {} goblins {} hpsum {:5} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
-        print(game)
-        last_time = now
 #        input("Tick...")
 
     outcome = hp_sum * rounds
