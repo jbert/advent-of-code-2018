@@ -18,26 +18,33 @@ def main():
         lines = f.readlines()
 
     game = Game(lines)
-    part1(game)
+    part1(game, True)
 
 
-def part1(game):
+def part1(game, clear=False):
 
     rounds = 0
     last_time = time.time()
     while game.isnt_over():
         now = time.time()
+        all_units_moved = game.tick()
         hp_sum = sum([u.hp for u in game.units])
-        print("Rounds {}: {} elves {} goblins {} hpsum {} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
-        last_time = now
+        if clear:
+            os.system("clear")
+        else:
+            print("-" * 40)
+        if all_units_moved:
+            rounds += 1
+        else:
+            break
+        print("Rounds {}: {} elves {} goblins {} hpsum {:5} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
         print(game)
-        rounds += 1
-        game.tick()
-        os.system("clear")
+        last_time = now
 #        input("Tick...")
 
-    rounds -= 1  # We didn't need to complete the last round
-    print("hp sum {} round {} outcome {}".format(hp_sum, rounds, hp_sum * rounds))
+    outcome = hp_sum * rounds
+    print("hp sum {} round {} outcome {}".format(hp_sum, rounds, outcome))
+    return (rounds, hp_sum, outcome)
 
  
 
@@ -84,15 +91,23 @@ class Unit():
         attackable_enemies = game.adjacent_enemies(self)
 #        print("SELF {} : AE - {}".format(self, attackable_enemies))
         if not attackable_enemies:
-            self._do_move(game)
-            attackable_enemies = game.adjacent_enemies(self)
+            enemies = game.enemies(self)
+            if enemies:
+                did_move = True
+                self._do_move(game, enemies)
+                attackable_enemies = game.adjacent_enemies(self)
+            else:
+                did_move = False
         if attackable_enemies:
             self._do_attack(game, attackable_enemies)
+            did_move = True
+
+        return did_move
 
     def _do_attack(self, game, attackable_enemies):
-        min_hp = min(attackable_enemies, key=lambda e: e.hp)
+        min_hp = min(attackable_enemies, key=lambda e: e.hp).hp
         attackable_enemies = [ae for ae in attackable_enemies if ae.hp == min_hp]
-        attackable_enemies = sorted(game.adjacent_enemies(self))
+        attackable_enemies = sorted(attackable_enemies)
         enemy = attackable_enemies[0]
         enemy.hp -= self.attack_power
         if enemy.hp < 0:
@@ -100,8 +115,7 @@ class Unit():
 #        print("{} attack {}".format(self, enemy))
 
 
-    def _do_move(self, game):
-        enemies = game.enemies(self)
+    def _do_move(self, game, enemies):
         target_pts = [pt for e in enemies for pt in game.adjacent_spaces(e.pt)]
         # filter target pts by being empty
         target_pts = [pt for pt in target_pts if game.is_empty(pt)]
@@ -221,8 +235,21 @@ class Game():
         return paths
 
     def shortest_path_between(self, start, dest):
-        def heuristic(pt):
-            return dest.manhattan(pt)
+        def heuristic(pt, prev):
+            # We 'reading order' step:
+            # so weight 0,1,2,3 for up/left/right/down
+            weight = 0
+            if prev:
+                prev_pt = prev.pt
+                if pt.y < prev_pt.y:
+                    weight = 0
+                elif pt.y > prev_pt.y:
+                    weight = 3
+                elif pt.x < prev_pt.x:
+                    weight = 1
+                else:
+                    weight = 2
+            return weight + dest.manhattan(pt)
 
         class Node():
             def __init__(self, pt, prev):
@@ -231,13 +258,17 @@ class Game():
                 self.l = 0
                 if prev:
                     self.l = prev.l + 1
-                self.f = heuristic(pt) + self.l
+                self.f = heuristic(pt, prev) + self.l
 
             def __lt__(self, other):
-                return self.f < other.f
+                if self.f < other.f:
+                    return True
+                if self.f > other.f:
+                    return False
+                return self.pt < other.pt
 
             def __repr__(self):
-                return "{} <- {}".format(self.pt, self.prev)
+                return "{} f {} <- {}".format(self.pt, self.f, self.prev)
 
         # Don't go back where we've been
         visited = set()
@@ -247,18 +278,22 @@ class Game():
         # Kept as a priority queue (sorted by the A-star function 'f' in Node above)
         heapq.heapify(fringe)
         while True:
+            #print("F: {}".format(fringe))
             if not len(fringe) > 0:
                 # No path
                 return None
 
             node = heapq.heappop(fringe)
+            #print("N: {}".format(node))
             if node.pt == dest:
                 break
             next_steps = [Node(next_pt, node) for next_pt in self.adjacent_spaces(node.pt) if next_pt != node.pt]
+            #print("NS: {}".format(next_steps))
             for next_step in next_steps:
                 if next_step.pt not in visited:
                     heapq.heappush(fringe, next_step)
                     visited.add(next_step.pt)
+                    #print("A: {}".format(next_step.pt))
 
         assert node.pt == dest
         path = []
@@ -295,9 +330,14 @@ class Game():
 
 
     def tick(self):
+        all_did_move = True
         for unit in self.units:
-            unit.move(self)
+            did_move = unit.move(self)
+            if not did_move:
+                all_did_move = False
+                break
         self._sort_units()
+        return all_did_move
 
 
     def isnt_over(self):
