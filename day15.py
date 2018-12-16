@@ -28,7 +28,7 @@ def part1(game):
     while game.isnt_over():
         now = time.time()
         hp_sum = sum([u.hp for u in game.units])
-        print("Rounds: {} elves {} goblins {} hpsum {} {} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
+        print("Rounds {}: {} elves {} goblins {} hpsum {} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
         last_time = now
         print(game)
         rounds += 1
@@ -77,7 +77,7 @@ class Unit():
 
 
     def __repr__(self):
-        return "{}: {} - {}".format(self.pt.x, self.c, self.hp)
+        return "{}: {} - {}".format(self.c, self.pt, self.hp)
 
 
     def move(self, game):
@@ -112,6 +112,8 @@ class Unit():
         # sort by path length (keep all shortest)
         paths = sorted(paths, key=lambda p: len(p))
         shortest_path_len = len(paths[0])
+        if shortest_path_len < 2:
+            raise RuntimeError("Found path to adjacent: {} - path [{}] enemies {} target_pts {}".format(self, paths[0], enemies, target_pts))
         paths = [p for p in paths if len(p) == shortest_path_len]
         # produce first steps on shortest paths
         steps = [p[1] for p in paths]
@@ -189,7 +191,7 @@ class Game():
 
     def adjacent_spaces(self, pt):
         pts = self.adjacent_pts(pt)
-        return [p for p in pts if self.contents_of(p) == MAP_FLOOR]
+        return [p for p in pts if self.contents_of(p) == MAP_FLOOR and self.find_unit(p) is None]
 
 
     def shortest_path_between(self, start, dest):
@@ -329,9 +331,16 @@ class Game():
             else:
                 return c
 
+        sorted_units = self.units.copy()
+
         map = ''
         for j in range(self.height):
             map += ''.join([_map_char(t, j) for t in enumerate(self.state[j])])
+            map += '\t'
+            while sorted_units and sorted_units[0].pt.y == j:
+                u = sorted_units[0]
+                del(sorted_units[0])
+                map += str(u) + ", "
             map += '\n'
     #        map = "\n".join(self.state)
         return map
