@@ -14,6 +14,9 @@ def main():
 #######
 """.split("\n")
 
+    with open("day15-input.txt") as f:
+        lines = f.readlines()
+
     game = Game(lines)
     part1(game)
 
@@ -21,15 +24,19 @@ def main():
 def part1(game):
 
     rounds = 0
+    last_time = time.time()
     while game.isnt_over():
-        os.system("clear")
+        now = time.time()
+        hp_sum = sum([u.hp for u in game.units])
+        print("Rounds: {} elves {} goblins {} hpsum {} {} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
+        last_time = now
+        print(game)
         rounds += 1
         game.tick()
-        print(rounds)
-        print(game)
-        input("Tick...")
+        os.system("clear")
+#        input("Tick...")
 
-    hp_sum = sum([u.hp for u in game.units])
+    rounds -= 1  # We didn't need to complete the last round
     print("hp sum {} round {} outcome {}".format(hp_sum, rounds, hp_sum * rounds))
 
  
@@ -75,17 +82,21 @@ class Unit():
 
     def move(self, game):
         attackable_enemies = game.adjacent_enemies(self)
-        if attackable_enemies:
-            min_hp = min(attackable_enemies, key=lambda e: e.hp)
-            attackable_enemies = [ae for ae in attackable_enemies if ae.hp == min_hp]
-            attackable_enemies = sorted(game.adjacent_enemies(self))
-            enemy = attackable_enemies[0]
-            enemy.hp -= self.attack_power
-            if enemy.hp < 0:
-                game.remove_unit(enemy)
-            print("{} attack {}".format(self, enemy))
-        else:
+        if not attackable_enemies:
             self._do_move(game)
+            attackable_enemies = game.adjacent_enemies(self)
+        if attackable_enemies:
+            self._do_attack(game, attackable_enemies)
+
+    def _do_attack(self, game, attackable_enemies):
+        min_hp = min(attackable_enemies, key=lambda e: e.hp)
+        attackable_enemies = [ae for ae in attackable_enemies if ae.hp == min_hp]
+        attackable_enemies = sorted(game.adjacent_enemies(self))
+        enemy = attackable_enemies[0]
+        enemy.hp -= self.attack_power
+        if enemy.hp < 0:
+            game.remove_unit(enemy)
+#        print("{} attack {}".format(self, enemy))
 
 
     def _do_move(self, game):
@@ -108,7 +119,7 @@ class Unit():
         steps = sorted(steps)
 
         # take first step
-        print("{} move {}".format(self, steps[0]))
+#        print("{} move {}".format(self, steps[0]))
         self.pt = steps[0]
 
 
@@ -148,7 +159,7 @@ class Pt():
 
 class Game():
     def __init__(self, lines):
-        lines = [l for l in lines if len(l) > 0]
+        lines = [l.rstrip() for l in lines if len(l) > 0]
         self.width = len(lines[0])
         self.units = []
         self.state = [self._parse_row(t) for t in enumerate(lines)]
@@ -323,8 +334,9 @@ class Game():
             map += ''.join([_map_char(t, j) for t in enumerate(self.state[j])])
             map += '\n'
     #        map = "\n".join(self.state)
-        units = '\n'.join([str(unit) for unit in self.units])
-        return map + "\n" + units
+        return map
+#        units = '\n'.join([str(unit) for unit in self.units])
+#        return map + "\n" + units
 
 
 if __name__ == '__main__':
