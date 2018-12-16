@@ -4,15 +4,15 @@ import os
 import heapq
 
 def main():
-    lines = """#########
-#G..G..G#
-#.......#
-#.......#
-#G..E..G#
-#.......#
-#.......#
-#G..G..G#
-#########""".split("\n")
+    lines = """
+#######
+#.G...#
+#...EG#
+#.#.#G#
+#..G#E#
+#.....#
+#######
+""".split("\n")
 
     game = Game(lines)
     part1(game)
@@ -22,14 +22,15 @@ def part1(game):
 
     rounds = 0
     while game.isnt_over():
+        os.system("clear")
         rounds += 1
-        if rounds % 100:
-            os.system("clear")
-            print(rounds)
-            print(game)
         game.tick()
+        print(rounds)
+        print(game)
+        input("Tick...")
 
-    print("NO COLLISION!: {}".format(collision))
+    hp_sum = sum([u.hp for u in game.units])
+    print("hp sum {} round {} outcome {}".format(hp_sum, rounds, hp_sum * rounds))
 
  
 
@@ -43,6 +44,8 @@ class Unit():
     def __init__(self, pt, c):
         self.pt = pt
         self.c = c
+        self.hp = 200
+        self.attack_power = 3
 
 
     def char(self):
@@ -53,34 +56,60 @@ class Unit():
         return self.c != other.c
 
 
+    def enemy(self):
+        if self.c == UNIT_ELF:
+            return UNIT_GOBLIN
+        elif self.c == UNIT_GOBLIN:
+            return UNIT_ELF
+        else:
+            raise RuntimeError("wtf")
+
+
     def __lt__(self, other):
         return self.pt < other.pt
 
 
     def __repr__(self):
-        return "{}: {}".format(self.pt.x, self.c)
+        return "{}: {} - {}".format(self.pt.x, self.c, self.hp)
 
 
     def move(self, game):
+        attackable_enemies = game.adjacent_enemies(self)
+        if attackable_enemies:
+            min_hp = min(attackable_enemies, key=lambda e: e.hp)
+            attackable_enemies = [ae for ae in attackable_enemies if ae.hp == min_hp]
+            attackable_enemies = sorted(game.adjacent_enemies(self))
+            enemy = attackable_enemies[0]
+            enemy.hp -= self.attack_power
+            if enemy.hp < 0:
+                game.remove_unit(enemy)
+            print("{} attack {}".format(self, enemy))
+        else:
+            self._do_move(game)
+
+
+    def _do_move(self, game):
         enemies = game.enemies(self)
-        target_pts = [pt for e in enemies for pt in e.pt.adjacent_space(game)]
+        target_pts = [pt for e in enemies for pt in game.adjacent_spaces(e.pt)]
         # filter target pts by being empty
         target_pts = [pt for pt in target_pts if game.is_empty(pt)]
         # filter by having a path (keep paths)
         paths = [game.shortest_path_between(self.pt, t) for t in target_pts]
         paths = [p for p in paths if p is not None]
+        if not paths:
+            return
         # sort by path length (keep all shortest)
         paths = sorted(paths, key=lambda p: len(p))
         shortest_path_len = len(paths[0])
         paths = [p for p in paths if len(p) == shortest_path_len]
-        steps = [p[0] for p in paths]
+        # produce first steps on shortest paths
+        steps = [p[1] for p in paths]
+        # sort first steps by destination reading order
         steps = sorted(steps)
 
-        print("step is {}".format(steps[0]))
-        # produce first steps on shortest paths
-        # sort first steps by destination reading order
         # take first step
-        raise RuntimeError("a")
+        print("{} move {}".format(self, steps[0]))
+        self.pt = steps[0]
 
 
 class Pt():
@@ -89,14 +118,6 @@ class Pt():
         self.y = y
         self.c = c
 
-
-    def adjacent_space(self, game):
-        pts = []
-        pts.append(self.add(0, -1))
-        pts.append(self.add(-1, 0))
-        pts.append(self.add(1, 0))
-        pts.append(self.add(0, 1))
-        return [p for p in pts if game.contains(p) and game.contents_of(p) == MAP_FLOOR]
 
 
     def add(self, x, y):
@@ -137,6 +158,29 @@ class Game():
         self._sort_units()
 
 
+    def contains(self,pt):
+        return pt.x > 0 and pt.y > 0 and pt.x < self.width and pt.y < self.height
+
+
+    def adjacent_pts(self, pt):
+        pts = []
+        pts.append(pt.add(0, -1))
+        pts.append(pt.add(-1, 0))
+        pts.append(pt.add(1, 0))
+        pts.append(pt.add(0, 1))
+        return [p for p in pts if self.contains(p)]
+
+
+    def adjacent_enemies(self, unit):
+        pts = self.adjacent_pts(unit.pt)
+        return [self.find_unit(p) for p in pts if self.contents_of(p) == unit.enemy()]
+
+
+    def adjacent_spaces(self, pt):
+        pts = self.adjacent_pts(pt)
+        return [p for p in pts if self.contents_of(p) == MAP_FLOOR]
+
+
     def shortest_path_between(self, start, dest):
         def heuristic(pt):
             # Manhattan distance, ignoring obstacles
@@ -172,7 +216,7 @@ class Game():
             node = heapq.heappop(fringe)
             if node.pt == dest:
                 break
-            next_steps = [Node(next_pt, node) for next_pt in node.pt.adjacent_space(self) if next_pt != node.pt]
+            next_steps = [Node(next_pt, node) for next_pt in self.adjacent_spaces(node.pt) if next_pt != node.pt]
             for next_step in next_steps:
                 if next_step.pt not in visited:
                     heapq.heappush(fringe, next_step)
@@ -197,10 +241,6 @@ class Game():
         return self.state[pt.y][pt.x] == MAP_FLOOR
 
 
-    def contains(self,pt):
-        return pt.x > 0 and pt.y > 0 and pt.x < self.width and pt.y < self.height
-
-
     def contents_of(self, pt):
         if pt.x < 0 or pt.x > self.width:
             raise RuntimeError("Bad x coord : {}".format(x))
@@ -208,7 +248,7 @@ class Game():
             raise RuntimeError("Bad y coord : {}".format(y))
         u = self.find_unit(pt)
         if u:
-            return u
+            return u.c
         return self.state[pt.y][pt.x]
 
 
@@ -216,7 +256,7 @@ class Game():
         return [u for u in self.units if u.is_enemy(unit)]
 
 
-    def tick(self, remove=False):
+    def tick(self):
         for unit in self.units:
             unit.move(self)
         self._sort_units()
@@ -234,7 +274,7 @@ class Game():
         else:
             raise RuntimeError("wtf")
 
-        self.units = [u for u in self.units if not(u.i == unit.i and u.j == unit.j)]
+        self.units = [u for u in self.units if not(u.pt == unit.pt)]
 
 
     def _parse_row(self, t):
