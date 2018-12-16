@@ -105,7 +105,8 @@ class Unit():
         # filter target pts by being empty
         target_pts = [pt for pt in target_pts if game.is_empty(pt)]
         # filter by having a path (keep paths)
-        paths = [game.shortest_path_between(self.pt, t) for t in target_pts]
+#        paths = [game.shortest_path_between(self.pt, t) for t in target_pts]
+        paths = game.shortest_paths_to(self.pt, target_pts)
         paths = [p for p in paths if p is not None]
         if not paths:
             return
@@ -131,6 +132,9 @@ class Pt():
         self.y = y
         self.c = c
 
+
+    def manhattan(self, other):
+        return abs(self.x - other.x) + abs(self.y - other.y)
 
 
     def add(self, x, y):
@@ -194,10 +198,27 @@ class Game():
         return [p for p in pts if self.contents_of(p) == MAP_FLOOR and self.find_unit(p) is None]
 
 
+    def shortest_paths_to(self, start, targets):
+        # The heuristic is a lower bound on the distance
+        # Path to the targets - heuristic-nearest first
+        # Cull any targets who are heuristic-further than the current shortest path
+        # - they cannot be closer
+        targets = sorted(targets, key=lambda p: p.manhattan(start))
+        paths = []
+        while targets:
+            dest = targets[0]
+            del(targets[0])
+            path = self.shortest_path_between(start, dest)
+            if path:
+                paths.append(path)
+                path_len = len(path)
+                targets = [t for t in targets if t.manhattan(start) <= path_len]
+
+        return paths
+
     def shortest_path_between(self, start, dest):
         def heuristic(pt):
-            # Manhattan distance, ignoring obstacles
-            return abs(pt.x - dest.x) + abs(pt.y - dest.y)
+            return dest.manhattan(pt)
 
         class Node():
             def __init__(self, pt, prev):
