@@ -82,6 +82,7 @@ class Unit():
 
     def move(self, game):
         attackable_enemies = game.adjacent_enemies(self)
+#        print("SELF {} : AE - {}".format(self, attackable_enemies))
         if not attackable_enemies:
             self._do_move(game)
             attackable_enemies = game.adjacent_enemies(self)
@@ -121,16 +122,16 @@ class Unit():
         # sort first steps by destination reading order
         steps = sorted(steps)
 
+        assert game.is_empty(steps[0])
         # take first step
 #        print("{} move {}".format(self, steps[0]))
-        self.pt = steps[0]
+        game.move_unit(self, steps[0])
 
 
 class Pt():
-    def __init__(self, x, y, c=None):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.c = c
 
 
     def manhattan(self, other):
@@ -146,11 +147,11 @@ class Pt():
 
     
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.c == other.c
+        return self.x == other.x and self.y == other.y
 
 
     def __hash__(self):
-        return hash((self.x, self.y, self.c))
+        return hash((self.x, self.y))
 
 
     # Reading order
@@ -174,6 +175,9 @@ class Game():
         self.num_goblins = len([u for u in self.units if u.c == UNIT_GOBLIN])
         self._sort_units()
 
+    def move_unit(self, unit, dest):
+        unit.pt = dest
+        self._sort_units()
 
     def contains(self,pt):
         return pt.x > 0 and pt.y > 0 and pt.x < self.width and pt.y < self.height
@@ -195,7 +199,7 @@ class Game():
 
     def adjacent_spaces(self, pt):
         pts = self.adjacent_pts(pt)
-        return [p for p in pts if self.contents_of(p) == MAP_FLOOR and self.find_unit(p) is None]
+        return [p for p in pts if self.is_empty(p)]
 
 
     def shortest_paths_to(self, start, targets):
