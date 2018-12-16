@@ -26,23 +26,26 @@ def part1(game, clear=False):
     rounds = 0
     last_time = time.time()
     now = last_time
+    hp_sum = sum([u.hp for u in game.units])
     while game.isnt_over():
-        hp_sum = sum([u.hp for u in game.units])
-        if clear:
-            os.system("clear")
-        else:
-            print("-" * 40)
         print("Rounds {}: {} elves {} goblins {} hpsum {:5} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
         print(game)
         last_time = now
         all_units_moved = game.tick()
+        hp_sum = sum([u.hp for u in game.units])
         now = time.time()
         if all_units_moved:
             rounds += 1
         else:
             break
+        if clear:
+            os.system("clear")
+        else:
+            print("-" * 40)
 #        input("Tick...")
 
+    print("Rounds {}: {} elves {} goblins {} hpsum {:5} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
+    print(game)
     outcome = hp_sum * rounds
     print("hp sum {} round {} outcome {}".format(hp_sum, rounds, outcome))
     return (rounds, hp_sum, outcome)
@@ -62,6 +65,8 @@ class Unit():
         self.hp = 200
         self.attack_power = 3
 
+    def dead(self):
+        return self.hp <= 0
 
     def char(self):
         return self.c
@@ -90,7 +95,7 @@ class Unit():
 
     def move(self, game):
         attackable_enemies = game.adjacent_enemies(self)
-#        print("SELF {} : AE - {}".format(self, attackable_enemies))
+        print("SELF {} : AE - {}".format(self, attackable_enemies))
         if not attackable_enemies:
             enemies = game.enemies(self)
             if enemies:
@@ -111,9 +116,9 @@ class Unit():
         attackable_enemies = sorted(attackable_enemies)
         enemy = attackable_enemies[0]
         enemy.hp -= self.attack_power
-        if enemy.hp < 0:
+        if enemy.dead():
             game.remove_unit(enemy)
-#        print("{} attack {}".format(self, enemy))
+        print("{} attack {}".format(self, enemy))
 
 
     def _do_move(self, game, enemies):
@@ -139,7 +144,7 @@ class Unit():
 
         assert game.is_empty(steps[0])
         # take first step
-#        print("{} move {}".format(self, steps[0]))
+        print("{} move {}".format(self, steps[0]))
         game.move_unit(self, steps[0])
 
 
@@ -333,6 +338,8 @@ class Game():
     def tick(self):
         all_did_move = True
         for unit in self.units:
+            if unit.dead():
+                continue
             did_move = unit.move(self)
             if not did_move:
                 all_did_move = False
