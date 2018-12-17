@@ -27,9 +27,32 @@ def part1(scan):
         print(scan)
         scan.tick()
         time.sleep(0.1)
-        os.system("clear")
+        #os.system("clear")
+        print("------")
 
     print("Water tiles: {}".format(scan.water_tiles()))
+
+
+class Pt():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+
+    def below(self):
+        return Pt(self.x, self.y+1)
+
+
+    def left(self):
+        return Pt(self.x-1, self.y)
+
+
+    def right(self):
+        return Pt(self.x+1, self.y)
+
+
+    def __repr__(self):
+        return "{},{}".format(self.x, self.y)
 
 
 class Scan():
@@ -43,7 +66,13 @@ class Scan():
         self.ywater = 0
         self.xwater = 500
 
-        self.new_water = [(self.xwater, self.ywater)]
+        self.new_water = set()
+        self.new_water.add(Pt(self.xwater, self.ywater))
+        self.old_water = set()
+
+
+    def water_tiles(self):
+        return self.old_water
 
 
     def has_change(self):
@@ -51,8 +80,18 @@ class Scan():
 
 
     def tick(self):
-        pass
-        #for pt in self.new_water:
+        new_water = set(self.new_water)
+        self.new_water = set()
+        self.old_water.update(new_water)
+
+        for pt in new_water:
+            below = pt.below()
+            c = self._peek(below)
+            if c == '.':
+                self.new_water.add(below)
+
+        self._render_water()
+
 
 
     def add_horiz(self, y, xlo, xhi):
@@ -75,8 +114,12 @@ class Scan():
         self._render_all()
 
 
-    def _poke(self, x, y, c):
-        self.scan[y-self.ymin+1][x-self.xmin+1] = ord(c)
+    def _poke(self, pt, c):
+        self.scan[pt.y-self.ymin+1][pt.x-self.xmin+1] = ord(c)
+
+
+    def _peek(self, pt):
+        return chr(self.scan[pt.y-self.ymin+1][pt.x-self.xmin+1])
 
 
     def _height(self):
@@ -89,8 +132,9 @@ class Scan():
 
     def __repr__(self):
         header = "xmin {} xmax {} ymin {} ymax {}".format(self.xmin, self.xmax, self.ymin, self.ymax)
+        water = "New: {}".format(self.new_water) + "\n" + "Old: {}".format(self.old_water)
         scan_str = "\n".join([row.decode('ascii') for row in self.scan])
-        return header + "\n" + scan_str
+        return header + "\n" + water + "\n" + scan_str
 
 
     def _render_all(self):
@@ -98,12 +142,20 @@ class Scan():
         for h in self.horiz:
             y, xlo, xhi = h
             for x in range(xlo, xhi+1):
-                self._poke(x, y, '#')
+                self._poke(Pt(x, y), '#')
         for v in self.vert:
             x, ylo, yhi = v
             for y in range(ylo, yhi+1):
-                self._poke(x, y, '#')
-        self._poke(self.xwater, self.ywater, '+')
+                self._poke(Pt(x, y), '#')
+        self._render_water()
+        self._poke(Pt(self.xwater, self.ywater), '+')
+
+
+    def _render_water(self):
+        for pt in self.old_water:
+            self._poke(pt, '~')
+        for pt in self.new_water:
+            self._poke(pt, '|')
 
 
 
