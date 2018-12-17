@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import re
+import time
+import os
 
 def main():
     lines = """
@@ -13,12 +15,21 @@ x=504, y=10..13
 y=13, x=498..504
 """.split("\n")
 
+#    with open("day17-input.txt") as f:
+#        lines = f.readlines()
+
     scan = parse_lines(lines)
     part1(scan)
 
 
 def part1(scan):
-    print(scan)
+    while scan.has_change():
+        print(scan)
+        scan.tick()
+        time.sleep(0.1)
+        os.system("clear")
+
+    print("Water tiles: {}".format(scan.water_tiles()))
 
 
 class Scan():
@@ -31,6 +42,17 @@ class Scan():
         self.ymax = 0
         self.ywater = 0
         self.xwater = 500
+
+        self.new_water = [(self.xwater, self.ywater)]
+
+
+    def has_change(self):
+        return len(self.new_water) > 0
+
+
+    def tick(self):
+        pass
+        #for pt in self.new_water:
 
 
     def add_horiz(self, y, xlo, xhi):
@@ -49,6 +71,14 @@ class Scan():
         self.vert.append((x, ylo, yhi))
 
 
+    def finish_load(self):
+        self._render_all()
+
+
+    def _poke(self, x, y, c):
+        self.scan[y-self.ymin+1][x-self.xmin+1] = ord(c)
+
+
     def _height(self):
         return self.ymax - self.ymin + 3
 
@@ -59,18 +89,21 @@ class Scan():
 
     def __repr__(self):
         header = "xmin {} xmax {} ymin {} ymax {}".format(self.xmin, self.xmax, self.ymin, self.ymax)
-        scan = [bytearray(b'.' * self._width()) for _ in range(self._height())]
+        scan_str = "\n".join([row.decode('ascii') for row in self.scan])
+        return header + "\n" + scan_str
+
+
+    def _render_all(self):
+        self.scan = [bytearray(b'.' * self._width()) for _ in range(self._height())]
         for h in self.horiz:
             y, xlo, xhi = h
             for x in range(xlo, xhi+1):
-                scan[y-self.ymin+1][x-self.xmin+1] = ord("#")
+                self._poke(x, y, '#')
         for v in self.vert:
             x, ylo, yhi = v
             for y in range(ylo, yhi+1):
-                scan[y-self.ymin+1][x-self.xmin+1] = ord("#")
-        scan[self.ywater - self.ymin+1][self.xwater - self.xmin+1] = ord('+')
-        scan_str = "\n".join([row.decode('ascii') for row in scan])
-        return header + "\n" + scan_str
+                self._poke(x, y, '#')
+        self._poke(self.xwater, self.ywater, '+')
 
 
 
@@ -90,6 +123,8 @@ def parse_lines(lines):
             scan.add_horiz(const, lo, hi)
         else:
             raise RuntimeError("wtf: {}".format(line))
+
+    scan.finish_load()
 
     return scan
 
