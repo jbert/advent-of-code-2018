@@ -13,35 +13,109 @@ After:  [3, 2, 2, 1]
         buf = f.read()
 
     samples = parse_samples(buf)
+    program = parse_program(buf)
 
-    instructions = [
-            lambda a, b, c: Instruction("addr", a, False, b, False, c, do_add),
-            lambda a, b, c: Instruction("addi", a, False, b, True, c, do_add),
+    instructions = {
+            "addr": lambda a, b, c: Instruction("addr", a, False, b, False, c, do_add),
+            "addi": lambda a, b, c: Instruction("addi", a, False, b, True, c, do_add),
 
-            lambda a, b, c: Instruction("mulr", a, False, b, False, c, do_mul),
-            lambda a, b, c: Instruction("muli", a, False, b, True, c, do_mul),
+            "mulr": lambda a, b, c: Instruction("mulr", a, False, b, False, c, do_mul),
+            "muli": lambda a, b, c: Instruction("muli", a, False, b, True, c, do_mul),
 
-            lambda a, b, c: Instruction("banr", a, False, b, False, c, do_ban),
-            lambda a, b, c: Instruction("bani", a, False, b, True, c, do_ban),
+            "banr": lambda a, b, c: Instruction("banr", a, False, b, False, c, do_ban),
+            "bani": lambda a, b, c: Instruction("bani", a, False, b, True, c, do_ban),
 
-            lambda a, b, c: Instruction("borr", a, False, b, False, c, do_bor),
-            lambda a, b, c: Instruction("bori", a, False, b, True, c, do_bor),
+            "borr": lambda a, b, c: Instruction("borr", a, False, b, False, c, do_bor),
+            "bori": lambda a, b, c: Instruction("bori", a, False, b, True, c, do_bor),
 
-            lambda a, b, c: Instruction("setr", a, False, b, False, c, do_set),
-            lambda a, b, c: Instruction("seti", a, True, b, False, c, do_set),
+            "setr": lambda a, b, c: Instruction("setr", a, False, b, False, c, do_set),
+            "seti": lambda a, b, c: Instruction("seti", a, True, b, False, c, do_set),
 
-            lambda a, b, c: Instruction("gtir", a, True, b, False, c, do_gt),
-            lambda a, b, c: Instruction("gtri", a, False, b, True, c, do_gt),
-            lambda a, b, c: Instruction("gtrr", a, False, b, False, c, do_gt),
+            "gtir": lambda a, b, c: Instruction("gtir", a, True, b, False, c, do_gt),
+            "gtri": lambda a, b, c: Instruction("gtri", a, False, b, True, c, do_gt),
+            "gtrr": lambda a, b, c: Instruction("gtrr", a, False, b, False, c, do_gt),
 
-            lambda a, b, c: Instruction("eqir", a, True, b, False, c, do_eq),
-            lambda a, b, c: Instruction("eqri", a, False, b, True, c, do_eq),
-            lambda a, b, c: Instruction("eqrr", a, False, b, False, c, do_eq),
-            ]
+            "eqir": lambda a, b, c: Instruction("eqir", a, True, b, False, c, do_eq),
+            "eqri": lambda a, b, c: Instruction("eqri", a, False, b, True, c, do_eq),
+            "eqrr": lambda a, b, c: Instruction("eqrr", a, False, b, False, c, do_eq),
+            }
 
+    part1(samples, instructions.values())
+    part2(samples, instructions, program)
+
+
+def part2(samples, instructions, program):
+
+    isa = discover_opcodes(samples, instructions)
+    regs = [0] * 4
+    for args in program:
+        opcode = args[0]
+        inst_name = isa[opcode]
+        inster = instructions[inst_name]
+        inst = inster(args[1],args[2],args[3])
+        inst.execute(regs)
+
+    print("REG 0: {}".format(regs[0]))
+
+
+def discover_opcodes(samples, instructions):
+    opcode_options = [set(instructions.keys()).copy() for _ in range(16)]
+
+    print("Got {} samples".format(len(samples)))
+    for sample in samples:
+        print(sample)
+        args = sample.args
+        opcode = args[0]
+        options = opcode_options[opcode].copy()
+        if len(options) > 1:
+            for name in options:
+                inster = instructions[name]
+                inst = inster(args[1], args[2], args[3])
+                regs = sample.before.copy()
+                inst.execute(regs)
+                if regs != sample.after:
+                    #print("F: {} {}".format(opcode, name))
+                    opcode_options[opcode].remove(name)
+                #else:
+                    #print("S: {} {}".format(opcode, name))
+
+    for opcode, options in enumerate(opcode_options):
+        print("{} => {}".format(opcode, options))
+
+    done = False
+    while not done:
+#        for opcode, options in enumerate(opcode_options):
+#            print("{} => {}".format(opcode, options))
+
+        done = True
+        # Take a copy for iteration
+        for opcode, options in enumerate(opcode_options.copy()):
+            if len(options) == 1:
+                name = list(options)[0]
+                for to_remove_opcode in range(16):
+                    if opcode != to_remove_opcode:
+                        try:
+                            opcode_options[to_remove_opcode].remove(name)
+                        except KeyError:
+                            pass
+            else:
+                # We've seen a > 1, we aren't done yet
+                done = False
+
+    isa = [None] * 16
+    for opcode, options in enumerate(opcode_options):
+        assert len(options) == 1
+        print("{} => {}".format(opcode, options))
+        isa[opcode] = list(options)[0]
+
+    return isa
+
+
+
+def part1(samples, instructions):
     triple_match_samples = 0
     for sample in samples:
-        print("S: {} -> {} ({})".format(sample.before, sample.after, sample.args))
+        #print("S: {} -> {} ({})".format(sample.before, sample.after, sample.args))
         num_matches = 0
         for inster in instructions:
             regs = sample.before.copy()
@@ -49,13 +123,24 @@ After:  [3, 2, 2, 1]
             inst = inster(args[1], args[2], args[3])
             inst.execute(regs)
             if regs == sample.after:
-                print("Matches: {}".format(inst.name))
+                #print("Matches: {}".format(inst.name))
                 num_matches += 1
         if num_matches >= 3:
             triple_match_samples += 1
 
     print("{} / {} tms".format(triple_match_samples, len(samples)))
 
+
+
+def parse_program(buf):
+    def _parse_line(l):
+        return [int(s) for s in l.split(" ")]
+
+    start = buf.rindex("After:")
+    buf = buf[start:]
+    start = buf.index("\n\n")
+    buf = buf[start:]
+    return [_parse_line(l) for l in buf.split("\n") if len(l) > 0]
 
 
 def parse_samples(buf):
@@ -80,6 +165,10 @@ class Sample():
         self.before = before
         self.args = args
         self.after = after
+
+
+    def __repr__(self):
+        return "{} -> {} ({})".format(self.before, self.after, self.args)
 
 
 def do_add(a, b):
