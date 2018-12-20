@@ -95,7 +95,7 @@ class Unit():
 
     def move(self, game):
         attackable_enemies = game.adjacent_enemies(self)
-        print("SELF {} : AE - {}".format(self, attackable_enemies))
+        #print("SELF {} : AE - {}".format(self, attackable_enemies))
         if not attackable_enemies:
             enemies = game.enemies(self)
             if enemies:
@@ -118,7 +118,7 @@ class Unit():
         enemy.hp -= self.attack_power
         if enemy.dead():
             game.remove_unit(enemy)
-        print("{} attack {}".format(self, enemy))
+        #print("{} attack {}".format(self, enemy))
 
 
     def _do_move(self, game, enemies):
@@ -144,7 +144,7 @@ class Unit():
 
         assert game.is_empty(steps[0])
         # take first step
-        print("{} move {}".format(self, steps[0]))
+        #print("{} move {}".format(self, steps[0]))
         game.move_unit(self, steps[0])
 
 
