@@ -18,7 +18,32 @@ def main():
         lines = f.readlines()
 
     game = Game(lines)
-    part1(game, True)
+#    part1(game, True)
+    part2(lines)
+
+
+def part2(lines):
+    elf_attack_power = 4
+    while True:
+        game = Game(lines, elf_attack_power)
+        rounds = 0
+        num_elves = game.num_elves
+        while True:
+            all_units_moved = game.tick()
+            if all_units_moved:
+                rounds += 1
+            os.system("clear")
+            print("EP: {}".format(elf_attack_power))
+            print(game)
+
+            if game.num_elves < num_elves:
+                break
+            if game.num_goblins == 0:
+                hp_sum = sum([u.hp for u in game.units])
+                outcome = hp_sum * rounds
+                print("Done! EP {} rounds {} hp sum {} outcome {}".format(elf_attack_power, rounds, hp_sum, outcome))
+                return
+        elf_attack_power += 1
 
 
 def part1(game, clear=False):
@@ -28,6 +53,7 @@ def part1(game, clear=False):
     now = last_time
     hp_sum = sum([u.hp for u in game.units])
     while game.isnt_over():
+        print("--------")
         print("Rounds {}: {} elves {} goblins {} hpsum {:5} sec".format(rounds, game.num_elves, game.num_goblins, hp_sum, now - last_time))
         print(game)
         last_time = now
@@ -121,31 +147,61 @@ class Unit():
         #print("{} attack {}".format(self, enemy))
 
 
-    def _do_move(self, game, enemies):
-        target_pts = [pt for e in enemies for pt in game.adjacent_spaces(e.pt)]
-        # filter target pts by being empty
-        target_pts = [pt for pt in target_pts if game.is_empty(pt)]
-        # filter by having a path (keep paths)
-#        paths = [game.shortest_path_between(self.pt, t) for t in target_pts]
-        paths = game.shortest_paths_to(self.pt, target_pts)
-        paths = [p for p in paths if p is not None]
-        if not paths:
-            return
-        # sort by path length (keep all shortest)
-        paths = sorted(paths, key=lambda p: len(p))
-        shortest_path_len = len(paths[0])
-        if shortest_path_len < 2:
-            raise RuntimeError("Found path to adjacent: {} - path [{}] enemies {} target_pts {}".format(self, paths[0], enemies, target_pts))
-        paths = [p for p in paths if len(p) == shortest_path_len]
-        # produce first steps on shortest paths
-        steps = [p[1] for p in paths]
-        # sort first steps by destination reading order
-        steps = sorted(steps)
+    def _breadth_first_search(self, game, target_pts):
+        target_set = set(target_pts)
 
-        assert game.is_empty(steps[0])
+        first_steps = game.adjacent_spaces(self.pt)
+        for first_step in first_steps:
+            if first_step in target_set:
+                return (first_step, first_step)
+
+        fringe = [(step, step) for step in first_steps]
+        seen = set()
+        #print("BFS {} -> {}".format(self.pt, target_pts))
+        while fringe:
+            #print("F: {}".format(fringe))
+            #print("S: {}".format(sorted(list(seen))))
+            new_fringe = []
+            for t in fringe:
+                (pt, first_step) = t
+                steps = [(p, first_step) for p in game.adjacent_spaces(pt) if p not in seen]
+                for (pt, _) in steps:
+                    seen.add(pt)
+                hits = []
+                for (pt, first_step) in steps:
+                    #print("JB test {} in {}".format(pt, target_set))
+                    if pt in target_set:
+                        #print("HIT")
+                        hits.append((pt, first_step))
+                if hits:
+                    hits = sorted(hits)
+                    #print("RET {}".format(hits[0]))
+                    return hits[0]
+
+                new_fringe += steps
+
+            fringe = new_fringe
+
+        return None
+
+    def _do_move(self, game, enemies):
+        # filter target pts by being empty
+        target_pts = sorted([pt for e in enemies for pt in game.adjacent_spaces(e.pt)])
+        # filter by having a path (keep paths)
+
+
+        # Breadth-first search of pts, tagging each with the start step
+        hit = self._breadth_first_search(game, target_pts)
+        if not hit:
+            return 
+        (target, step) = hit
+
+        assert game.is_empty(step)
+        assert target in target_pts
+
         # take first step
         #print("{} move {}".format(self, steps[0]))
-        game.move_unit(self, steps[0])
+        game.move_unit(self, step)
 
 
 class Pt():
@@ -185,7 +241,7 @@ class Pt():
 
 
 class Game():
-    def __init__(self, lines):
+    def __init__(self, lines, elf_attack_power=3):
         lines = [l.rstrip() for l in lines if len(l) > 0]
         self.width = len(lines[0])
         self.units = []
@@ -193,6 +249,9 @@ class Game():
         self.height = len(self.state)
         self.num_elves = len([u for u in self.units if u.c == UNIT_ELF])
         self.num_goblins = len([u for u in self.units if u.c == UNIT_GOBLIN])
+        for u in self.units:
+            if u.c == UNIT_ELF:
+                u.attack_power = elf_attack_power
         self._sort_units()
 
     def move_unit(self, unit, dest):
