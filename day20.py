@@ -9,11 +9,15 @@ def main():
 
 
 class Regex:
-    def __init__(self):
+    def __init__(self, toplevel):
         self.r = []
+        self.toplevel = toplevel
 
     def __repr__(self):
-        return "^" + "".join([str(sr) for sr in self.r]) + "$"
+        rstr = "".join([str(sr) for sr in self.r])
+        if self.toplevel:
+            rstr = '^' + rstr + '$'
+        return rstr
 
 class Option():
     def __init__(self):
@@ -25,30 +29,30 @@ class Option():
 def parse_regex(line):
     news = set('NESW')
 
+    def _parse_regex(line, toplevel):
+        r = Regex(toplevel)
+        while line and line[0] != ')' and line[0] != '|':
+            if line[0] in news:
+                line, chunk = _parse_literal(line)
+                r.r.append(chunk)
+            elif line[0] == '(':
+                line, o = _parse_option(line[1:])
+                r.r.append(o)
+            else:
+                raise RuntimeError("Failed to parse: {}".format(line[0]))
+
+        return line, r
+
     def _parse_option(line):
         o = Option()
 
         # hack to support empty option
         while line:
-            print("L: {}\n{}\n".format(line, o.o))
-            if line[0] in news:
-                print("JB0")
-                line, chunk = _parse_literal(line)
-                o.o.append(chunk)
-                if line[0] == '|':
-                    line = line[1:]
-            elif line[0] == '(':
-                print("JB1")
-                line, subo = _parse_option(line[1:])
-                o.o.append(subo)
-                if line[0] == '|':
-                    line = line[1:]
-            elif line[0] == '|':
-                print("JB1")
-                o.o.append('')
+            line, r = _parse_regex(line, False)
+            o.o.append(r)
+            if line[0] == '|':
                 line = line[1:]
             elif line[0] == ')':
-                print("JB3")
                 break
             else:
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
@@ -70,16 +74,7 @@ def parse_regex(line):
         raise RuntimeError("No end of line marker")
     line = line[1:-1]
 
-    r = Regex()
-    while line:
-        if line[0] in news:
-            line, chunk = _parse_literal(line)
-            r.r.append(chunk)
-        elif line[0] == '(':
-            line, o = _parse_option(line[1:])
-            r.r.append(o)
-        else:
-            raise RuntimeError("Failed to parse: {}".format(line[0]))
+    line, r = _parse_regex(line, True)
     assert line == ''
 
     return r
