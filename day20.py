@@ -26,7 +26,10 @@ class Regex:
         return rstr
 
     def distance(self):
-        return sum([r.distance() for r in self.r])
+        return self._distance
+
+    def set_distance(self):
+        self._distance = sum([r.distance() for r in self.r])
 
 class Literal:
     def __init__(self, s):
@@ -36,7 +39,11 @@ class Literal:
         return self.s
 
     def distance(self):
-        return len(self.s)
+        return self._distance
+
+    def set_distance(self):
+        self._distance = len(self.s)
+
 
 class Option():
     def __init__(self):
@@ -46,11 +53,14 @@ class Option():
         return "(" + "|".join([str(so) for so in self.o]) + ")"
 
     def distance(self):
+        return self._distance
+
+    def set_distance(self):
         m = min([r.distance() for r in self.o])
         if m == 0:
-            return 0
+            self._distance = 0
         else:
-            return max([r.distance() for r in self.o])
+            self._distance = max([r.distance() for r in self.o])
 
 def parse_regex(line):
     line = line.rstrip()
@@ -68,6 +78,7 @@ def parse_regex(line):
             else:
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
 
+        r.set_distance()
         return line, r
 
     def _parse_option(line):
@@ -85,6 +96,7 @@ def parse_regex(line):
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
 
         assert line[0] == ')'
+        o.set_distance()
         return line[1:], o
 
 
@@ -93,7 +105,9 @@ def parse_regex(line):
         while line and line[0] in news:
             chunk += line[0]
             line = line[1:]
-        return line, Literal(chunk)
+        l = Literal(chunk)
+        l.set_distance()
+        return line, l
 
     if line[0] != '^':
         raise RuntimeError("No start of line marker")
