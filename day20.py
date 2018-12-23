@@ -1,11 +1,17 @@
 #!/usr/bin/python3
+import sys
 
 def main():
     #line = '^WNE$'
+    sys.setrecursionlimit(100000)
     line = '^ENWWW(NEEE|SSE(EE|N))$'
+
+    with open("day20-input.txt") as f:
+        line = f.readline()
 
     r = parse_regex(line)
     print(r)
+    print(r.distance())
 
 
 class Regex:
@@ -19,6 +25,19 @@ class Regex:
             rstr = '^' + rstr + '$'
         return rstr
 
+    def distance(self):
+        return sum([r.distance() for r in self.r])
+
+class Literal:
+    def __init__(self, s):
+        self.s = s
+
+    def __repr__(self):
+        return self.s
+
+    def distance(self):
+        return len(self.s)
+
 class Option():
     def __init__(self):
         self.o = []
@@ -26,7 +45,15 @@ class Option():
     def __repr__(self):
         return "(" + "|".join([str(so) for so in self.o]) + ")"
 
+    def distance(self):
+        m = min([r.distance() for r in self.o])
+        if m == 0:
+            return 0
+        else:
+            return max([r.distance() for r in self.o])
+
 def parse_regex(line):
+    line = line.rstrip()
     news = set('NESW')
 
     def _parse_regex(line, toplevel):
@@ -66,7 +93,7 @@ def parse_regex(line):
         while line and line[0] in news:
             chunk += line[0]
             line = line[1:]
-        return line, chunk
+        return line, Literal(chunk)
 
     if line[0] != '^':
         raise RuntimeError("No start of line marker")
