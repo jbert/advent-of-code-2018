@@ -18,14 +18,19 @@ seti 9 0 5
         lines = f.readlines()
 
     ipreg, instructions = parse_program(lines)
-    #machine = Machine(ipreg, instructions)
-    #part1(machine)
+    part1(ipreg, instructions)
+#    part2(ipreg, instructions)
+
+
+def part1(ipreg, instructions):
     machine = Machine(ipreg, instructions)
-    #machine.regs[0] = 1
-    part1(machine)
+    print("Reg0 is {}".format(machine.run()))
+    pass
 
 
-def part1(machine):
+def part2(ipreg, instructions):
+    machine = Machine(ipreg, instructions)
+    machine.regs[0] = 1
     print("Reg0 is {}".format(machine.run()))
     pass
 
@@ -49,7 +54,7 @@ class Machine():
         inst = inster(args[0], args[1], args[2])
         inst.execute(self.regs)
         if debug:
-            print("ip={} {} {} {} {}".format(self.ip, regs_before, name, args, self.regs))
+            print("ip={:2} {} {} {} {}".format(self.ip, regs_before, name, args, self.regs))
 
         self.ip = self.regs[self.ipreg]
         self.ip += 1
