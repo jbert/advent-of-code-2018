@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import re
+from collections import defaultdict
 
 def main():
     lines = """
@@ -27,7 +28,7 @@ class Battle:
         self.infection = infection
 
 
-class Unit:
+class Group:
     def __init__(self, num, hp, traits, dmg, dtype, initiative):
         self.num = num
         self.hp = hp
@@ -37,7 +38,7 @@ class Unit:
 
 
     def __repr__(self):
-        return "{} units with {} hp".format(self.num, self.hp)
+        return "{} groups with {} hp".format(self.num, self.hp)
 
 
 def parse_lines(lines):
@@ -46,25 +47,34 @@ def parse_lines(lines):
         raise RuntimeError("First line wrong? : {}".foramt(lines[0]))
     lines = lines[1:]
 
-#    pattern = r"(\d+) units each with (\d+) hit points \((immune to (\w+,? ?)+)?;?(weak to (\w+,? ?)+\) with an attack that does (\d+) (\w+) damage at initiative (\d+)"
-#    pattern = r"(\d+) units each with (\d+) hit points \(((?:immune|weak) to (?:\w+,? ?;? ?)+)"
     pattern = r"(\d+) units each with (\d+) hit points \(([^\(]+)\) with an attack that does (\d+) (\w+) damage at initiative (\d+)"
-    units = []
+    groups = []
     while lines:
         if lines[0] == "Infection:":
-            immune = units.copy()
-            units = []
+            immune = groups.copy()
+            groups = []
             lines = lines[1:]
         match = re.search(pattern, lines[0])
         if not match:
             raise RuntimeError("Didn't match : {}".format(lines[0]))
         num, hp, traits, dmg, dtype, initiative = match.groups()
         num, hp, dmg, initiative = map(int, [num, hp, dmg, initiative])
-        u = Unit(num, hp, traits, dmg, dtype, initiative)
-        units.append(u)
+
+        traits = traits.split('; ')
+        tpattern = r"(weak|immune) to ([\w ,]+)+"
+        tdict = defaultdict(list)
+        for trait in traits:
+            tmatch = re.search(tpattern, trait)
+            if not match:
+                raise RuntimeError("Didn't match : {}".format(trait))
+            trait_type, twords = tmatch.groups()
+            tdict[trait_type] += twords.split(", ")
+
+        g = Group(num, hp, tdict, dmg, dtype, initiative)
+        groups.append(g)
         lines = lines[1:]
 
-    infection = units
+    infection = groups
 
     return Battle(immune, infection)
 
