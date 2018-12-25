@@ -23,8 +23,8 @@ def part1(battle):
 #    print("Infection::\n{}".format(battle.infection))
     while not battle.is_finished():
         battle.fight()
-    print("\n-----Finished")
-    print(battle)
+        print("\n-----")
+        print(battle)
 
 
 class Battle:
@@ -40,7 +40,7 @@ class Battle:
         else:
             msg += [str(g) for g in self.immune]
 
-        msg = ["Infection:"]
+        msg.append("Infection:")
         if len(self.infection) == 0:
             msg.append("No groups remain")
         else:
@@ -59,12 +59,12 @@ class Battle:
         self.immune = sorted(self.immune, key=lambda g: g._target_choose_order())
         available = self.immune.copy()
         for g in self.infection:
-            g._select_target(available)
+            availavble = g._select_target(available)
         available = self.infection.copy()
         for g in self.immune:
-            g._select_target(available)
+            availavble = g._select_target(available)
 
-        fighters = sorted(self.infection + self.immune, key=lambda g: g.initiative)
+        fighters = sorted(self.infection + self.immune, key=lambda g: -g.initiative)
         for f in fighters:
             if f.is_dead():
                 continue
@@ -140,11 +140,11 @@ class Group:
 
 
     def _target_attractiveness(self, other):
-        return (self.damage_calc(other), other.effective_power(), other.initiative)
+        return (self.damage_calc(other), other.effective_power(), -other.initiative)
 
 
     def _target_choose_order(self):
-        return (self.effective_power(), self.initiative)
+        return (-self.effective_power(), -self.initiative)
 
 
     def __repr__(self):
