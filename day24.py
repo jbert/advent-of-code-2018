@@ -13,6 +13,9 @@ Infection:
 4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
 """.split('\n')
 
+#    with open("day24-input.txt") as f:
+#        lines = f.readlines()
+
     battle = parse_lines(lines)
     part1(battle)
 
@@ -25,6 +28,7 @@ def part1(battle):
         battle.fight()
         print("\n-----")
         print(battle)
+    print("Winning side has: {} units".format(battle.winning_side_units()))
 
 
 class Battle:
@@ -49,6 +53,15 @@ class Battle:
         return "\n".join(msg)
 
 
+    def winning_side_units(self):
+        assert min(len(self.immune), len(self.infection)) == 0
+        s = 0
+        s += sum([u.num for u in self.immune])
+        s += sum([u.num for u in self.infection])
+
+        return s
+
+
     def is_finished(self):
         return len(self.immune) == 0 or len(self.infection) == 0
 
@@ -59,10 +72,10 @@ class Battle:
         self.immune = sorted(self.immune, key=lambda g: g._target_choose_order())
         available = self.immune.copy()
         for g in self.infection:
-            availavble = g._select_target(available)
+            available = g._select_target(available)
         available = self.infection.copy()
         for g in self.immune:
-            availavble = g._select_target(available)
+            available = g._select_target(available)
 
         fighters = sorted(self.infection + self.immune, key=lambda g: -g.initiative)
         for f in fighters:
@@ -156,9 +169,9 @@ class Group:
 
 
 def parse_lines(lines):
-    lines = [l for l in lines if len(l) > 0]
+    lines = [l.rstrip() for l in lines if len(l) >= 2]
     if lines[0] != "Immune System:":
-        raise RuntimeError("First line wrong? : {}".foramt(lines[0]))
+        raise RuntimeError("First line wrong? : {}".format(lines[0]))
     lines = lines[1:]
 
     pattern = r"(\d+) units each with (\d+) hit points \(([^\(]+)\) with an attack that does (\d+) (\w+) damage at initiative (\d+)"
