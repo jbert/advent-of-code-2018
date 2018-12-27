@@ -13,8 +13,8 @@ Infection:
 4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
 """.split('\n')
 
-#    with open("day24-input.txt") as f:
-#        lines = f.readlines()
+    with open("day24-input.txt") as f:
+        lines = f.readlines()
 
     battle = parse_lines(lines)
     part1(battle)
@@ -174,7 +174,7 @@ def parse_lines(lines):
         raise RuntimeError("First line wrong? : {}".format(lines[0]))
     lines = lines[1:]
 
-    pattern = r"(\d+) units each with (\d+) hit points \(([^\(]+)\) with an attack that does (\d+) (\w+) damage at initiative (\d+)"
+    pattern = r"(\d+) units each with (\d+) hit points (?:\(([^\(]+)\) )?with an attack that does (\d+) (\w+) damage at initiative (\d+)"
     groups = []
     gid = 1
     gtype = 'Immune'
@@ -191,15 +191,19 @@ def parse_lines(lines):
         num, hp, traits, dmg, dtype, initiative = match.groups()
         num, hp, dmg, initiative = map(int, [num, hp, dmg, initiative])
 
-        traits = traits.split('; ')
-        tpattern = r"(weak|immune) to ([\w ,]+)+"
-        tdict = defaultdict(list)
-        for trait in traits:
-            tmatch = re.search(tpattern, trait)
-            if not match:
-                raise RuntimeError("Didn't match : {}".format(trait))
-            trait_type, twords = tmatch.groups()
-            tdict[trait_type] += twords.split(", ")
+        if traits:
+            traits = traits.split('; ')
+            tpattern = r"(weak|immune) to ([\w ,]+)+"
+            tdict = defaultdict(list)
+            for trait in traits:
+                tmatch = re.search(tpattern, trait)
+                if not match:
+                    raise RuntimeError("Didn't match : {}".format(trait))
+                trait_type, twords = tmatch.groups()
+                tdict[trait_type] += twords.split(", ")
+        else:
+                tdict['weak'] = []
+                tdict['immune'] = []
 
         g = Group(gid, gtype, num, hp, tdict, dmg, dtype, initiative)
         groups.append(g)
