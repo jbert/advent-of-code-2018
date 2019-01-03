@@ -24,7 +24,7 @@ Infection:
 
     global debug
 #    debug = True
-#    part1(lines, 0)
+    part1(lines, 0)
     part2(lines)
 
 
@@ -251,10 +251,10 @@ def parse_lines(lines):
         num, hp, traits, dmg, dtype, initiative = match.groups()
         num, hp, dmg, initiative = map(int, [num, hp, dmg, initiative])
 
+        tdict = defaultdict(list)
         if traits:
             traits = traits.split('; ')
             tpattern = r"(weak|immune) to ([\w ,]+)+"
-            tdict = defaultdict(list)
             for trait in traits:
                 tmatch = re.search(tpattern, trait)
                 if not match:
