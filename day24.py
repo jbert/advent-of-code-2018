@@ -128,8 +128,8 @@ class Battle:
         if debug:
             print()
 
-        self.infection = sorted(self.infection, key=lambda g: g._target_choose_order())
-        self.immune = sorted(self.immune, key=lambda g: g._target_choose_order())
+        self.infection = sorted(self.infection, key=lambda g: g._target_choose_order(), reverse=True)
+        self.immune = sorted(self.immune, key=lambda g: g._target_choose_order(), reverse=True)
 
         available = self.immune.copy()
         for g in self.infection:
@@ -139,7 +139,7 @@ class Battle:
         for g in self.immune:
             available = g._select_target(available)
 
-        fighters = sorted(self.infection + self.immune, key=lambda g: -g.initiative)
+        fighters = sorted(self.infection + self.immune, key=lambda g: g.initiative, reverse=True)
         for f in fighters:
             if f.is_dead():
                 continue
@@ -213,10 +213,10 @@ class Group:
         return available
 
     def _target_attractiveness(self, other):
-        return (self.damage_calc(other), other.effective_power(), -other.initiative)
+        return (self.damage_calc(other), other.effective_power(), other.initiative)
 
     def _target_choose_order(self):
-        return (-self.effective_power(), -self.initiative)
+        return (self.effective_power(), self.initiative)
 
     def __repr__(self):
         target_id = None
