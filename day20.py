@@ -10,8 +10,21 @@ def main():
         line = f.readline()
 
     r = parse_regex(line)
-    print(r)
-    print(r.distance())
+    part1(r)
+
+
+def part1(r):
+    m = Map(r)
+    print(m)
+    print(m.distance())
+
+
+class Map:
+    def __init__(self, r):
+        self.r = r
+
+    def distance(self):
+        return 0
 
 
 class Regex:
@@ -25,24 +38,12 @@ class Regex:
             rstr = '^' + rstr + '$'
         return rstr
 
-    def distance(self):
-        return self._distance
-
-    def set_distance(self):
-        self._distance = sum([r.distance() for r in self.r])
-
 class Literal:
     def __init__(self, s):
         self.s = s
 
     def __repr__(self):
         return self.s
-
-    def distance(self):
-        return self._distance
-
-    def set_distance(self):
-        self._distance = len(self.s)
 
 
 class Option():
@@ -52,15 +53,6 @@ class Option():
     def __repr__(self):
         return "(" + "|".join([str(so) for so in self.o]) + ")"
 
-    def distance(self):
-        return self._distance
-
-    def set_distance(self):
-        m = min([r.distance() for r in self.o])
-        if m == 0:
-            self._distance = 0
-        else:
-            self._distance = max([r.distance() for r in self.o])
 
 def parse_regex(line):
     line = line.rstrip()
@@ -78,7 +70,6 @@ def parse_regex(line):
             else:
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
 
-        r.set_distance()
         return line, r
 
     def _parse_option(line):
@@ -96,7 +87,6 @@ def parse_regex(line):
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
 
         assert line[0] == ')'
-        o.set_distance()
         return line[1:], o
 
 
@@ -106,7 +96,6 @@ def parse_regex(line):
             chunk += line[0]
             line = line[1:]
         l = Literal(chunk)
-        l.set_distance()
         return line, l
 
     if line[0] != '^':

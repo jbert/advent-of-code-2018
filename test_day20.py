@@ -1,4 +1,4 @@
-from day20 import parse_regex
+from day20 import parse_regex, Map
 
 
 def test_parse():
@@ -27,5 +27,6 @@ def test_path():
         (rstr, expected_distance) = t
         r = parse_regex(rstr)
         assert str(r) == rstr
-        distance = r.distance()
+        m = Map(r)
+        distance = m.distance()
         assert distance == expected_distance
