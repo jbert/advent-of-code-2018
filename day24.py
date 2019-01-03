@@ -206,7 +206,10 @@ class Group:
         self.target = None
         if not available:
             return available
-        self.target = max(available, key=lambda g: self._target_attractiveness(g))
+        target = max(available, key=lambda g: self._target_attractiveness(g))
+        if not self.damage_calc(target) > 0:
+            return available
+        self.target = target
         available = [g for g in available if g.id != self.target.id]
         if debug:
             print("{} group {} would deal defending group {} {} damage".format(self.gtype, self.id, self.target.id, self.damage_calc(self.target)))
