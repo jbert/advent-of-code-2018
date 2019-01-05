@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import sys
+from collections import defaultdict
+
 
 def main():
     line = '^WNE$'
@@ -27,40 +29,71 @@ class Map:
         self._build()
 
     def distance(self):
+        start = self.rooms[Pos(0, 0).location()]
         return 0
 
     def _build(self):
-        rooms = dict()
+        rooms = defaultdict(Room)
 
-        max_len = 0
-        def _f(pos):
-            seen = rooms.get(pos.location())
-            if seen:
-                pos.plen = seen.plen
-                return
-            rooms[pos.location()] = pos
-            pos.plen += 1
-            nonlocal max_len
-            if pos.plen > max_len:
-                max_len = pos.plen
-            print("P: {} ML: {}".format(pos, max_len))
+        def _f(pos, old_loc):
+            loc = pos.location()
+            room = rooms[loc]
+
+            room.adjacent.add(old_loc)
+            rooms[old_loc].adjacent.add(loc)
+            rooms[loc] = room
 
         p = Pos(0, 0, _f)
-        _f(p)
+        rooms[p.location()] = Room()
         self.r.walk(p)
 
-        self.max_len = max_len - 1
-
-    def distance(self):
-        return self.max_len
+        self.rooms = rooms
 
 
 class Room:
-    def __init__(self, x, y):
-        self.n = None
-        self.e = None
-        self.s = None
-        self.w = None
+    def __init__(self):
+        self.adjacent = set()
+
+
+class Pos():
+    def __init__(self, x, y, f=None):
+        self.x = x
+        self.y = y
+        self.f = f
+
+    def n(self):
+        old_loc = self.location()
+        self.y -= 1
+        self.f(self, old_loc)
+
+    def s(self):
+        old_loc = self.location()
+        self.y += 1
+        self.f(self, old_loc)
+
+    def w(self):
+        old_loc = self.location()
+        self.x -= 1
+        self.f(self, old_loc)
+
+    def e(self):
+        old_loc = self.location()
+        self.x += 1
+        self.f(self, old_loc)
+
+    def __repr__(self):
+        return "{},{}".format(self.x, self.y)
+
+    def location(self):
+        return "{},{}".format(self.x, self.y)
+
+    def save(self):
+        self._save_x = self.x
+        self._save_y = self.y
+
+    def restore(self):
+        self.x = self._save_x
+        self.y = self._save_y
 
 
 class Regex:
@@ -114,48 +147,6 @@ class Option():
             p.restore()
 
 
-class Pos():
-    def __init__(self, x, y, f, plen=0):
-        self.x = x
-        self.y = y
-        self.f = f
-        self.plen = plen
-
-    def n(self):
-        self.y -= 1
-        self.f(self)
-
-    def s(self):
-        self.y += 1
-        self.f(self)
-
-    def w(self):
-        self.x -= 1
-        self.f(self)
-
-    def e(self):
-        self.x += 1
-        self.f(self)
-
-    def __repr__(self):
-        return "{},{} ({})".format(self.x, self.y, self.plen)
-
-    def location(self):
-        return "{},{}".format(self.x, self.y)
-
-    def save(self):
-        print("SAVE: plen {}".format(self.plen))
-        self._save_x = self.x
-        self._save_y = self.y
-        self._save_plen = self.plen
-
-    def restore(self):
-        self.x = self._save_x
-        self.y = self._save_y
-        self.plen = self._save_plen
-        print("REST: plen {}".format(self.plen))
-
-
 def parse_regex(line):
     line = line.rstrip()
     news = set('NESW')
@@ -191,14 +182,13 @@ def parse_regex(line):
         assert line[0] == ')'
         return line[1:], o
 
-
     def _parse_literal(line):
         chunk = ''
         while line and line[0] in news:
             chunk += line[0]
             line = line[1:]
-        l = Literal(chunk)
-        return line, l
+        lit = Literal(chunk)
+        return line, lit
 
     if line[0] != '^':
         raise RuntimeError("No start of line marker")
@@ -210,7 +200,7 @@ def parse_regex(line):
     assert line == ''
 
     return r
-    
+
 
 if __name__ == '__main__':
     main()
