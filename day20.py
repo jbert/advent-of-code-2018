@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import sys
-from collections import defaultdict
+from queue import Queue
+from itertools import count
 
 
 def main():
@@ -30,29 +31,63 @@ class Map:
 
     def distance(self):
         start = self.rooms[Pos(0, 0).location()]
-        return 0
+
+        todo = Queue()
+        todo.put((start, 0))
+        seen = set()
+        seen.add(start)
+
+        max_distance = 0
+        while not todo.empty():
+            (room, distance) = todo.get()
+            print("visit {} dist {}".format(room, distance))
+            if distance > max_distance:
+                max_distance = distance
+            for adjacent_room in room.adjacent:
+                if adjacent_room not in seen:
+                    todo.put((adjacent_room, distance + 1))
+                    seen.add(adjacent_room)
+
+        return max_distance
 
     def _build(self):
-        rooms = defaultdict(Room)
+        idx_iter = count(1, 1)
+        rooms = dict()
 
         def _f(pos, old_loc):
             loc = pos.location()
-            room = rooms[loc]
+            try:
+                room = rooms[loc]
+            except KeyError:
+                room = Room(idx_iter)
+                rooms[loc] = room
 
-            room.adjacent.add(old_loc)
-            rooms[old_loc].adjacent.add(loc)
-            rooms[loc] = room
+            old_room = rooms[old_loc]
+
+            room.adjacent.add(old_room)
+            old_room.adjacent.add(room)
 
         p = Pos(0, 0, _f)
-        rooms[p.location()] = Room()
+        rooms[p.location()] = Room(idx_iter)
         self.r.walk(p)
 
         self.rooms = rooms
 
 
 class Room:
-    def __init__(self):
+    def __init__(self, idx_iter):
+        self.idx = next(idx_iter)
         self.adjacent = set()
+        print("ROOM: {}".format(self.idx))
+
+    def __eq__(self, other):
+        return self.idx == other.idx
+
+    def __hash__(self):
+        return self.idx
+
+    def __repr__(self):
+        return "R: {} {}".format(self.idx, sorted(map(lambda r: r.idx, list(self.adjacent))))
 
 
 class Pos():
