@@ -1,4 +1,6 @@
-from day20 import parse_regex, Map
+from day20 import parse_regex, Map, Room, Pos
+from itertools import count
+import pytest
 
 
 def test_parse():
@@ -31,3 +33,14 @@ def test_path():
         m = Map(r)
         distance = m.distance()
         assert distance == expected_distance
+
+
+def test_room():
+    idx_iter = count(1, 1)
+    a = Room(Pos(0, 0), idx_iter)
+    b = Room(Pos(0, 2), idx_iter)
+    with pytest.raises(AssertionError):
+        a.join(b)
+    a = Room(Pos(0, 0), idx_iter)
+    b = Room(Pos(0, 1), idx_iter)
+    a.join(b)

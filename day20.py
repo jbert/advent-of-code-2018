@@ -11,8 +11,8 @@ def main():
 
     line = '^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$'
 
-    with open("day20-input.txt") as f:
-        line = f.readline()
+#    with open("day20-input.txt") as f:
+#        line = f.readline()
 
     r = parse_regex(line)
     part1(r)
@@ -33,26 +33,39 @@ class Map:
         start = self.rooms[Pos(0, 0).location()]
 
         todo = Queue()
-        todo.put((start, 0))
+        todo.put((start, 0, None))
         seen = set()
         seen.add(start)
 
         max_distance = 0
         while not todo.empty():
-            (room, distance) = todo.get()
-            print("visit {} dist {}".format(room, distance))
+            (room, distance, direction) = todo.get()
+            print("visit {} dist {} dir {}".format(room, distance, direction))
             if distance > max_distance:
                 max_distance = distance
             for adjacent_room in room.adjacent:
                 if adjacent_room not in seen:
-                    todo.put((adjacent_room, distance + 1))
+                    todo.put((adjacent_room, distance + 1, room.pos.direction_to(adjacent_room.pos)))
                     seen.add(adjacent_room)
 
         return max_distance
 
-#    def __repr__(self):
-#        for y in range(self.miny, self.minx):
-#            for x in range(self.minx, self.minx):
+    def __repr__(self):
+        lines = ['#' * (2 * (self.maxx - self.minx) + 3)]
+        for y in range(self.miny, self.maxx+1):
+            room_line = '#'
+            wall_line = '#'
+            for x in range(self.minx, self.maxx+1):
+                p = Pos(x, y)
+                r = self.rooms[p.location()]
+                doors = r.doors()
+                room_line += 'X' if x == 0 and y == 0 else '.'
+                wall_line += '-' if 'S' in doors else '#'
+                room_line += '|' if 'E' in doors else '#'
+                wall_line += '#'
+            lines.append(room_line)
+            lines.append(wall_line)
+        return "\n".join(lines)
 
     def _build(self):
         idx_iter = count(1, 1)
@@ -78,7 +91,7 @@ class Map:
 
             old_room = rooms[old_loc]
 
-            room.join(old_room)
+            old_room.join(room)
 
         p = Pos(0, 0, _f)
         rooms[p.location()] = Room(p, idx_iter)
@@ -97,6 +110,7 @@ class Room:
     def join(self, other):
         self.adjacent.add(other)
         other.adjacent.add(self)
+        print("JOIN {} <-> {}".format(self, other))
         assert self.pos.is_adjacent(other.pos)
 
     def __eq__(self, other):
@@ -107,6 +121,9 @@ class Room:
 
     def __repr__(self):
         return "R: {} {} {}".format(self.idx, self.pos, sorted(map(lambda r: r.idx, list(self.adjacent))))
+
+    def doors(self):
+        return set([self.pos.direction_to(a.pos) for a in self.adjacent])
 
 
 class Pos():
@@ -154,6 +171,12 @@ class Pos():
 
     def copy(self):
         return Pos(self.x, self.y)
+
+    def direction_to(self, other):
+        assert self.is_adjacent(other)
+        if self.x == other.x:
+            return 'N' if other.y < self.y else 'S'
+        return 'W' if other.x < self.x else 'E'
 
 
 class Regex:
