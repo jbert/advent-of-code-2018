@@ -16,13 +16,16 @@ def main():
         line = f.readline()
 
     r = parse_regex(line)
-    part1(r)
+    part1and2(r)
 
 
-def part1(r):
+def part1and2(r):
     m = Map(r)
 #    print(m)
-    print("Map distance: {}".format(m.distance()))
+    room_distance = 1000
+    max_distance, num_rooms = m.distance(1000)
+    print("Map distance: {}".format(max_distance))
+    print("Num rooms {} away : {}".format(room_distance, num_rooms))
 
 
 class Map:
@@ -30,7 +33,7 @@ class Map:
         self.r = r
         self._build()
 
-    def distance(self):
+    def distance(self, room_distance=0):
         start = self.rooms[Pos(0, 0).location()]
 
         todo = Queue()
@@ -39,17 +42,20 @@ class Map:
         seen.add(start)
 
         max_distance = 0
+        num_rooms = 0
         while not todo.empty():
             (room, distance, direction) = todo.get()
 #            print("visit {} dist {} dir {}".format(room, distance, direction))
             if distance > max_distance:
                 max_distance = distance
+            if distance >= room_distance:
+                num_rooms += 1
             for adjacent_room in room.adjacent:
                 if adjacent_room not in seen:
                     todo.put((adjacent_room, distance + 1, room.pos.direction_to(adjacent_room.pos)))
                     seen.add(adjacent_room)
 
-        return max_distance
+        return max_distance, num_rooms
 
     def __repr__(self):
         lines = ['#' * (2 * (self.maxx - self.minx) + 3)]
