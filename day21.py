@@ -4,8 +4,8 @@ def main():
     depth = 510
     target = (10,10)
 
-#   depth = 5616
-#   target = (10,785)
+    depth = 5616
+    target = (10,785)
 
     system = make_system(depth, target)
     print_system(depth, target, system)
