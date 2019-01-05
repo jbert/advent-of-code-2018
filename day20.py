@@ -11,7 +11,7 @@ def main():
 
     line = '^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$'
 
-#    line = '^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$'
+    line = '^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$'
 #    with open("day20-input.txt") as f:
 #        line = f.readline()
 
@@ -111,7 +111,7 @@ class Room:
     def join(self, other):
         self.adjacent.add(other)
         other.adjacent.add(self)
-        print("JOIN {} <-> {}".format(self, other))
+        print("{} JOIN {} <-> {}".format(self.pos.direction_to(other.pos), self, other))
         assert self.pos.is_adjacent(other.pos)
 
     def __eq__(self, other):
@@ -132,6 +132,7 @@ class Pos():
         self.x = x
         self.y = y
         self.f = f
+        self._saved = []
 
     def n(self):
         old_loc = self.location()
@@ -160,12 +161,12 @@ class Pos():
         return "{},{}".format(self.x, self.y)
 
     def save(self):
-        self._save_x = self.x
-        self._save_y = self.y
+        self._saved.append((self.x, self.y))
 
     def restore(self):
-        self.x = self._save_x
-        self.y = self._save_y
+        (x, y) = self._saved.pop()
+        self.x = x
+        self.y = y
 
     def is_adjacent(self, other):
         return abs(self.x - other.x) + abs(self.y - other.y) == 1
@@ -225,8 +226,8 @@ class Option():
         return "(" + "|".join([str(so) for so in self.o]) + ")"
 
     def walk(self, p):
-        p.save()
         for so in self.o:
+            p.save()
             so.walk(p)
             p.restore()
 
