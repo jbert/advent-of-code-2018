@@ -11,7 +11,7 @@ def main():
 
     line = '^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$'
 
-    line = '^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$'
+#    line = '^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$'
 #    with open("day20-input.txt") as f:
 #        line = f.readline()
 
@@ -61,7 +61,7 @@ class Map:
                 r = self.rooms[p.location()]
                 doors = r.doors()
                 room_line += 'X' if x == 0 and y == 0 else '.'
-                wall_line += '-1G' if 'S' in doors else '#'
+                wall_line += '-' if 'S' in doors else '#'
                 room_line += '|' if 'E' in doors else '#'
                 wall_line += '#'
             lines.append(room_line)
