@@ -1,35 +1,207 @@
 #!/usr/bin/python3
 import sys
+from queue import Queue
+from itertools import count
+
 
 def main():
-    #line = '^WNE$'
+    line = '^WNE$'
     sys.setrecursionlimit(100000)
     line = '^ENWWW(NEEE|SSE(EE|N))$'
 
+    line = '^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$'
+
+    line = '^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$'
     with open("day20-input.txt") as f:
         line = f.readline()
 
     r = parse_regex(line)
-    print(r)
-    print(r.distance())
+    part1and2(r)
+
+
+def part1and2(r):
+    m = Map(r)
+#    print(m)
+    room_distance = 1000
+    max_distance, num_rooms = m.distance(1000)
+    print("Map distance: {}".format(max_distance))
+    print("Num rooms {} away : {}".format(room_distance, num_rooms))
+
+
+class Map:
+    def __init__(self, r):
+        self.r = r
+        self._build()
+
+    def distance(self, room_distance=0):
+        start = self.rooms[Pos(0, 0).location()]
+
+        todo = Queue()
+        todo.put((start, 0, None))
+        seen = set()
+        seen.add(start)
+
+        max_distance = 0
+        num_rooms = 0
+        while not todo.empty():
+            (room, distance, direction) = todo.get()
+#            print("visit {} dist {} dir {}".format(room, distance, direction))
+            if distance > max_distance:
+                max_distance = distance
+            if distance >= room_distance:
+                num_rooms += 1
+            for adjacent_room in room.adjacent:
+                if adjacent_room not in seen:
+                    todo.put((adjacent_room, distance + 1, room.pos.direction_to(adjacent_room.pos)))
+                    seen.add(adjacent_room)
+
+        return max_distance, num_rooms
+
+    def __repr__(self):
+        lines = ['#' * (2 * (self.maxx - self.minx) + 3)]
+        for y in range(self.miny, self.maxx+1):
+            room_line = '#'
+            wall_line = '#'
+            for x in range(self.minx, self.maxx+1):
+                p = Pos(x, y)
+                r = self.rooms[p.location()]
+                doors = r.doors()
+                room_line += 'X' if x == 0 and y == 0 else '.'
+                wall_line += '-' if 'S' in doors else '#'
+                room_line += '|' if 'E' in doors else '#'
+                wall_line += '#'
+            lines.append(room_line)
+            lines.append(wall_line)
+        return "\n".join(lines)
+
+    def _build(self):
+        idx_iter = count(1, 1)
+        rooms = dict()
+
+        self.minx = 0
+        self.maxx = 0
+        self.miny = 0
+        self.maxy = 0
+
+        def _f(pos, old_loc):
+            self.minx = min(self.minx, pos.x)
+            self.miny = min(self.miny, pos.y)
+            self.maxx = max(self.maxx, pos.x)
+            self.maxy = max(self.maxy, pos.y)
+
+            loc = pos.location()
+            try:
+                room = rooms[loc]
+            except KeyError:
+                room = Room(pos, idx_iter)
+                rooms[loc] = room
+
+            old_room = rooms[old_loc]
+
+            old_room.join(room)
+
+        p = Pos(0, 0, _f)
+        rooms[p.location()] = Room(p, idx_iter)
+        self.r.walk(p)
+
+        self.rooms = rooms
+
+
+class Room:
+    def __init__(self, pos, idx_iter):
+        self.idx = next(idx_iter)
+        self.adjacent = set()
+        self.pos = pos.copy()
+#        print("NEW ROOM: {}".format(self))
+
+    def join(self, other):
+        self.adjacent.add(other)
+        other.adjacent.add(self)
+#        print("{} JOIN {} <-> {}".format(self.pos.direction_to(other.pos), self, other))
+        assert self.pos.is_adjacent(other.pos)
+
+    def __eq__(self, other):
+        return self.idx == other.idx
+
+    def __hash__(self):
+        return self.idx
+
+    def __repr__(self):
+        return "R: {} {} {}".format(self.idx, self.pos, sorted(map(lambda r: r.idx, list(self.adjacent))))
+
+    def doors(self):
+        return set([self.pos.direction_to(a.pos) for a in self.adjacent])
+
+
+class Pos():
+    def __init__(self, x, y, f=None):
+        self.x = x
+        self.y = y
+        self.f = f
+        self._saved = []
+
+    def n(self):
+        old_loc = self.location()
+        self.y -= 1
+        self.f(self, old_loc)
+
+    def s(self):
+        old_loc = self.location()
+        self.y += 1
+        self.f(self, old_loc)
+
+    def w(self):
+        old_loc = self.location()
+        self.x -= 1
+        self.f(self, old_loc)
+
+    def e(self):
+        old_loc = self.location()
+        self.x += 1
+        self.f(self, old_loc)
+
+    def __repr__(self):
+        return "{},{}".format(self.x, self.y)
+
+    def location(self):
+        return "{},{}".format(self.x, self.y)
+
+    def save(self):
+        self._saved.append((self.x, self.y))
+
+    def restore(self):
+        (x, y) = self._saved.pop()
+        self.x = x
+        self.y = y
+
+    def is_adjacent(self, other):
+        return abs(self.x - other.x) + abs(self.y - other.y) == 1
+
+    def copy(self):
+        return Pos(self.x, self.y)
+
+    def direction_to(self, other):
+        assert self.is_adjacent(other)
+        if self.x == other.x:
+            return 'N' if other.y < self.y else 'S'
+        return 'W' if other.x < self.x else 'E'
 
 
 class Regex:
-    def __init__(self, toplevel):
+    def __init__(self, is_toplevel):
         self.r = []
-        self.toplevel = toplevel
+        self.is_toplevel = is_toplevel
 
     def __repr__(self):
         rstr = "".join([str(sr) for sr in self.r])
-        if self.toplevel:
+        if self.is_toplevel:
             rstr = '^' + rstr + '$'
         return rstr
 
-    def distance(self):
-        return self._distance
+    def walk(self, p):
+        for sr in self.r:
+            sr.walk(p)
 
-    def set_distance(self):
-        self._distance = sum([r.distance() for r in self.r])
 
 class Literal:
     def __init__(self, s):
@@ -38,11 +210,18 @@ class Literal:
     def __repr__(self):
         return self.s
 
-    def distance(self):
-        return self._distance
-
-    def set_distance(self):
-        self._distance = len(self.s)
+    def walk(self, p):
+        for c in self.s:
+            if c == 'N':
+                p.n()
+            elif c == 'E':
+                p.e()
+            elif c == 'W':
+                p.w()
+            elif c == 'S':
+                p.s()
+            else:
+                raise RuntimeError("wtf")
 
 
 class Option():
@@ -52,15 +231,12 @@ class Option():
     def __repr__(self):
         return "(" + "|".join([str(so) for so in self.o]) + ")"
 
-    def distance(self):
-        return self._distance
+    def walk(self, p):
+        for so in self.o:
+            p.save()
+            so.walk(p)
+            p.restore()
 
-    def set_distance(self):
-        m = min([r.distance() for r in self.o])
-        if m == 0:
-            self._distance = 0
-        else:
-            self._distance = max([r.distance() for r in self.o])
 
 def parse_regex(line):
     line = line.rstrip()
@@ -78,7 +254,6 @@ def parse_regex(line):
             else:
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
 
-        r.set_distance()
         return line, r
 
     def _parse_option(line):
@@ -96,18 +271,15 @@ def parse_regex(line):
                 raise RuntimeError("Failed to parse: {}".format(line[0]))
 
         assert line[0] == ')'
-        o.set_distance()
         return line[1:], o
-
 
     def _parse_literal(line):
         chunk = ''
         while line and line[0] in news:
             chunk += line[0]
             line = line[1:]
-        l = Literal(chunk)
-        l.set_distance()
-        return line, l
+        lit = Literal(chunk)
+        return line, lit
 
     if line[0] != '^':
         raise RuntimeError("No start of line marker")
@@ -119,7 +291,7 @@ def parse_regex(line):
     assert line == ''
 
     return r
-    
+
 
 if __name__ == '__main__':
     main()
