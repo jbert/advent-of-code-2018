@@ -1,7 +1,4 @@
 #!/usr/bin/python3
-import heapq
-
-
 def main():
     depth = 510
     target = (10, 10)
@@ -39,12 +36,11 @@ def find_path(depth, target, system):
                 if self.tool != prev.tool:
                     t += 7
                 self.minutes = prev.minutes + t
-            self.f = abs(pt.real - target.real) + abs(pt.imag - target.imag) + self.minutes
 
         def __lt__(self, other):
-            if self.f < other.f:
+            if self.minutes < other.minutes:
                 return True
-            if self.f > other.f:
+            if self.minutes > other.minutes:
                 return False
             if self.pt.real < other.pt.real:
                 return True
@@ -64,6 +60,8 @@ def find_path(depth, target, system):
             return [a for a in adj if a.real >= 0 and a.imag >= 0]
 
     def _viable(n):
+        if n.pt == target:
+            return n.tool == 'torch'
         gindex = system[int(n.pt.imag)][int(n.pt.real)]
         t = gindex_to_elevel(depth, gindex) % 3
         if t == 0:
@@ -81,31 +79,35 @@ def find_path(depth, target, system):
     # Don't go back where we've been
     visited = set()
     start = Node(0+0j, 'torch', None)
-    visited.add(start)
-    # Edge we are exploring
-    fringe = [start]
 
-    # Kept as a priority queue (sorted by the A-star function 'f' in Node above)
-    heapq.heapify(fringe)
+    # Edge we are exploring
+    fringe = dict()
+    fringe[str(start)] = start
+
     while True:
         if len(fringe) <= 0:
             # No path
             return None
 
-        node = heapq.heappop(fringe)
+        node = min(fringe.values())
+
 #        print("N: {}".format(node))
         if node.pt == target:
             # Found it
             break
         next_steps = [Node(next_pt, tool, node) for tool in ['none', 'torch', 'gear'] for next_pt in node.adjacent_pts()]
-        next_steps = [ns for ns in next_steps if _viable(ns)]
-        print("NS: {}".format(next_steps))
+        next_steps = [ns for ns in next_steps if ns not in visited and _viable(ns)]
+#        print("NS: {}".format(next_steps))
         for next_step in next_steps:
-            if next_step in visited:
-                continue
-            heapq.heappush(fringe, next_step)
-#            print("A: {}".format(next_step.pt))
-            visited.add(next_step)
+            try:
+                existing = fringe[str(next_step)]
+                if existing and existing.minutes < next_step.minutes:
+                    next_step = existing
+            except KeyError:
+                pass
+            fringe[str(next_step)] = next_step
+        del(fringe[str(node)])
+        visited.add(node)
 
     assert node.pt == target
     return node
