@@ -12,8 +12,8 @@ def main():
     line = '^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$'
 
     line = '^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$'
-#    with open("day20-input.txt") as f:
-#        line = f.readline()
+    with open("day20-input.txt") as f:
+        line = f.readline()
 
     r = parse_regex(line)
     part1(r)
@@ -21,7 +21,7 @@ def main():
 
 def part1(r):
     m = Map(r)
-    print(m)
+#    print(m)
     print("Map distance: {}".format(m.distance()))
 
 
@@ -41,7 +41,7 @@ class Map:
         max_distance = 0
         while not todo.empty():
             (room, distance, direction) = todo.get()
-            print("visit {} dist {} dir {}".format(room, distance, direction))
+#            print("visit {} dist {} dir {}".format(room, distance, direction))
             if distance > max_distance:
                 max_distance = distance
             for adjacent_room in room.adjacent:
@@ -106,12 +106,12 @@ class Room:
         self.idx = next(idx_iter)
         self.adjacent = set()
         self.pos = pos.copy()
-        print("NEW ROOM: {}".format(self))
+#        print("NEW ROOM: {}".format(self))
 
     def join(self, other):
         self.adjacent.add(other)
         other.adjacent.add(self)
-        print("{} JOIN {} <-> {}".format(self.pos.direction_to(other.pos), self, other))
+#        print("{} JOIN {} <-> {}".format(self.pos.direction_to(other.pos), self, other))
         assert self.pos.is_adjacent(other.pos)
 
     def __eq__(self, other):
