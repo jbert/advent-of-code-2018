@@ -34,9 +34,11 @@ class Map:
 
         max_len = 0
         def _f(pos):
-            if rooms.get(pos.location()):
+            seen = rooms.get(pos.location())
+            if seen:
+                pos.plen = seen.plen
                 return
-            rooms[pos.location()] = True
+            rooms[pos.location()] = pos
             pos.plen += 1
             nonlocal max_len
             if pos.plen > max_len:
