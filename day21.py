@@ -3,8 +3,8 @@ def main():
     depth = 510
     target = (10, 10)
 
-#    depth = 5616
-#    target = (10, 785)
+    depth = 5616
+    target = (10, 785)
 
     system = make_system(depth, target)
     print_system(depth, target, system)
@@ -44,6 +44,8 @@ def find_path(depth, target, system):
                 return False
             if self.pt.real < other.pt.real:
                 return True
+            if self.pt.real > other.pt.real:
+                return False
             return self.pt.imag < other.pt.imag
 
         def __eq__(self, other):
@@ -57,12 +59,17 @@ def find_path(depth, target, system):
 
         def adjacent_pts(self):
             adj = [self.pt + 1, self.pt - 1, self.pt + 1j, self.pt - 1j]
-            return [a for a in adj if a.real >= 0 and a.imag >= 0]
+            return [a for a in adj if a.real >= 0 and a.imag >= 0
+                    and a.real < int(target.real) + 21 and a.imag < int(target.imag) + 21]
 
     def _viable(n):
         if n.pt == target:
             return n.tool == 'torch'
-        gindex = system[int(n.pt.imag)][int(n.pt.real)]
+        try:
+            gindex = system[int(n.pt.imag)][int(n.pt.real)]
+        except IndexError as e:
+            print("Failed to lookup {}".format(n.pt))
+            raise e
         t = gindex_to_elevel(depth, gindex) % 3
         if t == 0:
             # rocky
@@ -142,11 +149,11 @@ def make_system(depth, target):
     tx, ty = target
 
     gindex = []
-    for y in range(3 * ty + 1):
+    for y in range(ty + 21):
         row = []
         gindex.append(row)
 #        print("Y: {}".format(y))
-        for x in range(3 * tx + 1):
+        for x in range(tx + 21):
             # print("X: {}".format(x))
             if x == 0 and y == 0:
                 row.append(0)
