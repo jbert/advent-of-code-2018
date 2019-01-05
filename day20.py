@@ -50,35 +50,54 @@ class Map:
 
         return max_distance
 
+#    def __repr__(self):
+#        for y in range(self.miny, self.minx):
+#            for x in range(self.minx, self.minx):
+
     def _build(self):
         idx_iter = count(1, 1)
         rooms = dict()
 
+        self.minx = 0
+        self.maxx = 0
+        self.miny = 0
+        self.maxy = 0
+
         def _f(pos, old_loc):
+            self.minx = min(self.minx, pos.x)
+            self.miny = min(self.miny, pos.y)
+            self.maxx = max(self.maxx, pos.x)
+            self.maxy = max(self.maxy, pos.y)
+
             loc = pos.location()
             try:
                 room = rooms[loc]
             except KeyError:
-                room = Room(idx_iter)
+                room = Room(pos, idx_iter)
                 rooms[loc] = room
 
             old_room = rooms[old_loc]
 
-            room.adjacent.add(old_room)
-            old_room.adjacent.add(room)
+            room.join(old_room)
 
         p = Pos(0, 0, _f)
-        rooms[p.location()] = Room(idx_iter)
+        rooms[p.location()] = Room(p, idx_iter)
         self.r.walk(p)
 
         self.rooms = rooms
 
 
 class Room:
-    def __init__(self, idx_iter):
+    def __init__(self, pos, idx_iter):
         self.idx = next(idx_iter)
         self.adjacent = set()
-        print("ROOM: {}".format(self.idx))
+        self.pos = pos.copy()
+        print("NEW ROOM: {}".format(self))
+
+    def join(self, other):
+        self.adjacent.add(other)
+        other.adjacent.add(self)
+        assert self.pos.is_adjacent(other.pos)
 
     def __eq__(self, other):
         return self.idx == other.idx
@@ -87,7 +106,7 @@ class Room:
         return self.idx
 
     def __repr__(self):
-        return "R: {} {}".format(self.idx, sorted(map(lambda r: r.idx, list(self.adjacent))))
+        return "R: {} {} {}".format(self.idx, self.pos, sorted(map(lambda r: r.idx, list(self.adjacent))))
 
 
 class Pos():
@@ -129,6 +148,12 @@ class Pos():
     def restore(self):
         self.x = self._save_x
         self.y = self._save_y
+
+    def is_adjacent(self, other):
+        return abs(self.x - other.x) + abs(self.y - other.y) == 1
+
+    def copy(self):
+        return Pos(self.x, self.y)
 
 
 class Regex:
