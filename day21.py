@@ -1,4 +1,10 @@
 #!/usr/bin/python3
+import heapq
+
+y_space = 100
+x_space = 100
+
+
 def main():
     depth = 510
     target = (10, 10)
@@ -38,15 +44,7 @@ def find_path(depth, target, system):
                 self.minutes = prev.minutes + t
 
         def __lt__(self, other):
-            if self.minutes < other.minutes:
-                return True
-            if self.minutes > other.minutes:
-                return False
-            if self.pt.real < other.pt.real:
-                return True
-            if self.pt.real > other.pt.real:
-                return False
-            return self.pt.imag < other.pt.imag
+            return self.minutes < other.minutes
 
         def __eq__(self, other):
             return self.pt == other.pt and self.tool == other.tool
@@ -55,12 +53,12 @@ def find_path(depth, target, system):
             return hash((self.pt, self.tool))
 
         def __repr__(self):
-            return "{}: {} {} mins".format(self.pt, self.tool, self.minutes)
+            return "{}: {}".format(self.pt, self.tool)
 
         def adjacent_pts(self):
             adj = [self.pt + 1, self.pt - 1, self.pt + 1j, self.pt - 1j]
             return [a for a in adj if a.real >= 0 and a.imag >= 0
-                    and a.real < int(target.real) + 60 and a.imag < int(target.imag) + 60]
+                    and a.real < int(target.real) + x_space and a.imag < int(target.imag) + y_space]
 
     def _viable(n):
         if n.pt == target:
@@ -90,13 +88,17 @@ def find_path(depth, target, system):
     # Edge we are exploring
     fringe = dict()
     fringe[str(start)] = start
+    fringeheap = [start]
+    heapq.heapify(fringeheap)
 
     while True:
         if len(fringe) <= 0:
             # No path
             return None
 
-        node = min(fringe.values())
+        node = heapq.heappop(fringeheap)
+        del(fringe[str(node)])
+        visited.add(node)
 
 #        print("N: {}".format(node))
         if node.pt == target:
@@ -108,13 +110,11 @@ def find_path(depth, target, system):
         for next_step in next_steps:
             try:
                 existing = fringe[str(next_step)]
-                if existing and existing.minutes < next_step.minutes:
+                if existing.minutes < next_step.minutes:
                     next_step = existing
             except KeyError:
-                pass
+                heapq.heappush(fringeheap, next_step)
             fringe[str(next_step)] = next_step
-        del(fringe[str(node)])
-        visited.add(node)
 
     assert node.pt == target
     return node
@@ -149,11 +149,11 @@ def make_system(depth, target):
     tx, ty = target
 
     gindex = []
-    for y in range(ty + 60):
+    for y in range(ty + y_space):
         row = []
         gindex.append(row)
 #        print("Y: {}".format(y))
-        for x in range(tx + 60):
+        for x in range(tx + x_space):
             # print("X: {}".format(x))
             if x == 0 and y == 0:
                 row.append(0)
