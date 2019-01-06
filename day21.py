@@ -60,7 +60,7 @@ def find_path(depth, target, system):
         def adjacent_pts(self):
             adj = [self.pt + 1, self.pt - 1, self.pt + 1j, self.pt - 1j]
             return [a for a in adj if a.real >= 0 and a.imag >= 0
-                    and a.real < int(target.real) + 21 and a.imag < int(target.imag) + 21]
+                    and a.real < int(target.real) + 60 and a.imag < int(target.imag) + 60]
 
     def _viable(n):
         if n.pt == target:
@@ -149,11 +149,11 @@ def make_system(depth, target):
     tx, ty = target
 
     gindex = []
-    for y in range(ty + 21):
+    for y in range(ty + 60):
         row = []
         gindex.append(row)
 #        print("Y: {}".format(y))
-        for x in range(tx + 21):
+        for x in range(tx + 60):
             # print("X: {}".format(x))
             if x == 0 and y == 0:
                 row.append(0)
