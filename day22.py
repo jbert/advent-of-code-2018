@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import heapq
 
-y_space = 100
-x_space = 100
+y_space = 30
+x_space = 30
 
 
 def main():
@@ -64,7 +64,7 @@ def find_path(depth, target, system):
         if n.pt == target:
             return n.tool == 'torch'
         try:
-            gindex = system[int(n.pt.imag)][int(n.pt.real)]
+            gindex = system[int(n.pt.imag + 0.1)][int(n.pt.real + 0.1)]
         except IndexError as e:
             print("Failed to lookup {}".format(n.pt))
             raise e
@@ -82,39 +82,35 @@ def find_path(depth, target, system):
             raise RuntimeError("wtf")
 
     # Don't go back where we've been
-    visited = set()
     start = Node(0+0j, 'torch', None)
 
     # Edge we are exploring
-    fringe = dict()
-    fringe[str(start)] = start
-    fringeheap = [start]
-    heapq.heapify(fringeheap)
+    seen = dict()
+    fringe = [start]
+    heapq.heapify(fringe)
 
     while True:
         if len(fringe) <= 0:
             # No path
             return None
 
-        node = heapq.heappop(fringeheap)
-        del(fringe[str(node)])
-        visited.add(node)
-
+        node = heapq.heappop(fringe)
 #        print("N: {}".format(node))
+#        print("F: {}".format(fringe))
+        existing = seen.get(str(node))
+        if existing and existing.minutes <= node.minutes:
+            # current is no better
+            continue
+        seen[str(node)] = node
+
         if node.pt == target:
             # Found it
             break
+
         next_steps = [Node(next_pt, tool, node) for tool in ['none', 'torch', 'gear'] for next_pt in node.adjacent_pts()]
-        next_steps = [ns for ns in next_steps if ns not in visited and _viable(ns)]
-#        print("NS: {}".format(next_steps))
+        next_steps = [ns for ns in next_steps if _viable(ns)]
         for next_step in next_steps:
-            try:
-                existing = fringe[str(next_step)]
-                if existing.minutes < next_step.minutes:
-                    next_step = existing
-            except KeyError:
-                heapq.heappush(fringeheap, next_step)
-            fringe[str(next_step)] = next_step
+            heapq.heappush(fringe, next_step)
 
     assert node.pt == target
     return node
