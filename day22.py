@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import heapq
 
-y_space = 30
-x_space = 30
+y_space = 200
+x_space = 200
 
 
 def main():
@@ -39,8 +39,11 @@ def find_path(depth, target, system):
             self.minutes = 0
             t = 1
             if prev:
+                assert self.tool == prev.tool or self.pt == prev.pt
                 if self.tool != prev.tool:
-                    t += 7
+                    t = 7
+                if self.pt != prev.pt:
+                    t = 1
                 self.minutes = prev.minutes + t
 
         def __lt__(self, other):
@@ -107,7 +110,8 @@ def find_path(depth, target, system):
             # Found it
             break
 
-        next_steps = [Node(next_pt, tool, node) for tool in ['none', 'torch', 'gear'] for next_pt in node.adjacent_pts()]
+        next_steps = [Node(next_pt, node.tool, node) for next_pt in node.adjacent_pts()]
+        next_steps += [Node(node.pt, tool, node) for tool in ['none', 'torch', 'gear']]
         next_steps = [ns for ns in next_steps if _viable(ns)]
         for next_step in next_steps:
             heapq.heappush(fringe, next_step)
